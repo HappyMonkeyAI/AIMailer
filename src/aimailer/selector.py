@@ -76,11 +76,47 @@ def score_item(item: Dict, keywords: List[str], source_weight_map: Optional[Dict
     return score
 
 
-def select_top(items: List[Dict], keywords: List[str], source_weight_map: Optional[Dict[str, float]] = None, n: int = 12) -> List[Dict]:
+def select_top_diverse(items: List[Dict], keywords: List[str], source_weight_map: Optional[Dict[str, float]] = None, n: int = 12) -> List[Dict]:
+    """Select top items ensuring source diversity."""
     items = dedupe(items)
-    scored = []
-    for it in items:
-        s = score_item(it, keywords, source_weight_map)
-        scored.append((s, it))
-    scored.sort(key=lambda x: x[0], reverse=True)
-    return [it for _, it in scored[:n]]
+    
+    # Group by source
+    by_source = {}
+    for item in items:
+        source = item.get('source', 'unknown')
+        if source not in by_source:
+            by_source[source] = []
+        by_source[source].append(item)
+    
+    # Score items within each source
+    for source, source_items in by_source.items():
+        scored = []
+        for item in source_items:
+            score = score_item(item, keywords, source_weight_map)
+            scored.append((score, item))
+        scored.sort(key=lambda x: x[0], reverse=True)
+        by_source[source] = [item for _, item in scored]
+    
+    # Select items round-robin from sources
+    selected = []
+    sources = list(by_source.keys())
+    source_idx = 0
+    
+    while len(selected) < n and any(by_source.values()):
+        source = sources[source_idx % len(sources)]
+        if by_source[source]:
+            selected.append(by_source[source].pop(0))
+        source_idx += 1
+        
+        # Remove empty sources
+        if not by_source[source]:
+            sources.remove(source)
+            if not sources:
+                break
+    
+    return selected
+
+
+def select_top(items: List[Dict], keywords: List[str], source_weight_map: Optional[Dict[str, float]] = None, n: int = 12) -> List[Dict]:
+    """Use diverse selection by default."""
+    return select_top_diverse(items, keywords, source_weight_map, n)

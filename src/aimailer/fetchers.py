@@ -1,4 +1,5 @@
 import requests
+import feedparser
 from typing import List, Dict, Optional
 
 
@@ -13,6 +14,18 @@ def fetch_http(url: str, timeout: int = 10) -> Optional[str]:
 
 
 def fetch_rss(url: str) -> List[Dict]:
-    """Placeholder: fetch an RSS feed and return list of items with title/url/summary/date."""
-    # Implement RSS parsing (feedparser) in later iteration.
-    return []
+    """Fetch an RSS feed and return list of items with title/url/summary/date."""
+    try:
+        feed = feedparser.parse(url)
+        items = []
+        for entry in feed.entries[:20]:  # Limit to 20 most recent
+            items.append({
+                'title': getattr(entry, 'title', ''),
+                'url': getattr(entry, 'link', ''),
+                'summary': getattr(entry, 'summary', ''),
+                'date': getattr(entry, 'published', None),
+                'source': url
+            })
+        return items
+    except Exception:
+        return []

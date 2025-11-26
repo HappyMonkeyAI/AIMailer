@@ -1,0 +1,17 @@
+[Unit]
+Description=AIMailer Email Queue Processor
+After=network.target
+
+[Service]
+Type=simple
+User=stephen
+WorkingDirectory=/home/stephen/AIMailer
+Environment=PATH=/home/stephen/AIMailer/venv/bin
+ExecStart=/home/stephen/AIMailer/venv/bin/python /home/stephen/AIMailer/src/process_email_queue.py
+Restart=always
+RestartSec=30
+StandardOutput=append:/home/stephen/AIMailer/processor.log
+StandardError=append:/home/stephen/AIMailer/processor.log
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,14 @@
+2. Build with Nano Banana Pro, our Gemini 3 Pro Image model
+Developers can build with Nano Banana Pro (Gemini 3 Pro Image) { "@context": "https://schema.org", "@type": "NewsArticle", "mainEntityOfPage": "https://blog.google/technology/developers/gemini-3-pro-image-developers/", "headline": "Build with Nano Banana Pro, our Gemini 3 Pro...
+
+Read more →
+
+3. How GitHub’s agentic security principles make our AI agents as secure as possible
+(window.NREUM||(NREUM={})).init={ajax:{deny_list:["bam.nr-data.net"]},feature_flags:["soft_nav"]};(window.NREUM||(NREUM={})).loader_config={licenseKey:"229f494c49",applicationID:"177966165",browserID:"177966210"};;/*! For license information please see...
+
+Read more →
+
+4. Introducing AnyLanguageModel: One API for Local and Remote LLMs on Apple Platforms
+const guestTheme = document.cookie.match(/theme=(\w+)/)?.[1]; document.documentElement.classList.toggle('dark', guestTheme === 'dark' || ( (!guestTheme || guestTheme === 'system') && window.matchMedia('(prefers-color-scheme: dark)').matches)); Introducing AnyLanguageModel:...
+
+Read more →

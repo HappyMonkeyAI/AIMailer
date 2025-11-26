@@ -1,0 +1,7 @@
+Running AIMailer pipeline (dry_run=True)
+Fetched 58 seed items
+Enriched 58 items with summaries
+Selected 12 top items
+send_email called; dry_run= True
+DRY RUN: would send email to stephen.z.phillips@sparktsl.com
+Wrote dry-run HTML to aimailer_last_dryrun.html
