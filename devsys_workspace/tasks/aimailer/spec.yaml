@@ -1,0 +1,19 @@
+id: aimailer-001
+title: "Scaffold AIMailer weekly roundup project"
+owner: manager
+kind: scaffold
+deploy: false
+spec:
+  description: |
+    Create a lightweight Python project scaffold for the AIMailer weekly roundup.
+    Produce modules under src/aimailer/: fetchers.py, extractor.py, summarizer.py, composer.py, sender.py, config.py.
+    Also create requirements.txt, run.py, config.example.yaml, tests/ with basic tests, and a Dockerfile (optional).
+  acceptance_criteria:
+    - src/aimailer/fetchers.py exists and contains placeholder functions for RSS and HTTP fetches
+    - src/aimailer/summarizer.py exists and can call an LLM client via env var
+    - config.example.yaml documents sources and env var placeholders
+    - run.py --dry-run can run the pipeline locally without sending emails
+    - Basic unit tests that run pytest and pass for placeholders
+  notes: |
+    This task is intended for the DevSys coding-agent to generate code artifacts into workspace/tasks/aimailer/src when the DevSys stack is running.
+    Do NOT perform any real email sends; implement a dry-run mode for verification.
