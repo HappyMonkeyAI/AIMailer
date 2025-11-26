@@ -2,3 +2,5 @@ requests
 beautifulsoup4
 pyyaml
 pytest
+feedparser
+python-dateutil
