@@ -11,5 +11,7 @@ SCHEDULE = 'Daily 12:00'
 RECIPIENTS = [
     'stephen.z.phillips@sparktsl.com',
     'stephen.phillips.work@gmail.com',
-    'patricia.gruhala@sparktsl.com',
 ]
+EMAIL_SUBJECT = 'Daily AI Tooling Roundup'
+EMAIL_TITLE = 'Daily AI Tooling Roundup'
+CACHE_FILE = '/home/stephen/AIMailer/sent_articles.json'

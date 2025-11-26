@@ -3,17 +3,18 @@ import json
 from datetime import datetime, timedelta
 from typing import List, Dict, Set
 
-CACHE_FILE = '/home/stephen/AIMailer/sent_articles.json'
+DEFAULT_CACHE_FILE = '/home/stephen/AIMailer/sent_articles.json'
 CACHE_DAYS = 30  # Keep track for 30 days
 
 
-def load_sent_articles() -> Set[str]:
+def load_sent_articles(cache_file: str = None) -> Set[str]:
     """Load previously sent article URLs from cache."""
-    if not os.path.exists(CACHE_FILE):
+    cache_file = cache_file or DEFAULT_CACHE_FILE
+    if not os.path.exists(cache_file):
         return set()
     
     try:
-        with open(CACHE_FILE, 'r') as f:
+        with open(cache_file, 'r') as f:
             data = json.load(f)
         
         # Clean old entries (older than CACHE_DAYS)
@@ -33,14 +34,15 @@ def load_sent_articles() -> Set[str]:
         return set()
 
 
-def save_sent_articles(sent_urls: Set[str]) -> None:
+def save_sent_articles(sent_urls: Set[str], cache_file: str = None) -> None:
     """Save sent article URLs to cache with current timestamp."""
+    cache_file = cache_file or DEFAULT_CACHE_FILE
     try:
         # Load existing data
         existing_data = {}
-        if os.path.exists(CACHE_FILE):
+        if os.path.exists(cache_file):
             try:
-                with open(CACHE_FILE, 'r') as f:
+                with open(cache_file, 'r') as f:
                     existing_data = json.load(f)
             except:
                 pass
@@ -62,15 +64,15 @@ def save_sent_articles(sent_urls: Set[str]) -> None:
                 continue
         
         # Save to file
-        with open(CACHE_FILE, 'w') as f:
+        with open(cache_file, 'w') as f:
             json.dump(cleaned_data, f, indent=2)
     except Exception as e:
         print(f'Warning: Could not save article cache: {e}')
 
 
-def filter_new_articles(articles: List[Dict]) -> List[Dict]:
+def filter_new_articles(articles: List[Dict], cache_file: str = None) -> List[Dict]:
     """Filter out articles that have been sent before."""
-    sent_urls = load_sent_articles()
+    sent_urls = load_sent_articles(cache_file)
     new_articles = []
     
     for article in articles:
@@ -81,8 +83,8 @@ def filter_new_articles(articles: List[Dict]) -> List[Dict]:
     return new_articles
 
 
-def mark_articles_sent(articles: List[Dict]) -> None:
+def mark_articles_sent(articles: List[Dict], cache_file: str = None) -> None:
     """Mark articles as sent to prevent future duplicates."""
     urls = {article.get('url') for article in articles if article.get('url')}
     urls.discard(None)  # Remove None values
-    save_sent_articles(urls)
+    save_sent_articles(urls, cache_file)

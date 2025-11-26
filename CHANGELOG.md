@@ -4,6 +4,61 @@ All notable changes to this project will be documented in this file.
 
 The format is based on "Keep a Changelog" and this project adheres to Semantic Versioning.
 
+## [1.2.0] - 2025-11-26 - DUAL EMAIL SYSTEM 🚀
+
+### 🎉 Major Features Added
+- **Dual Email System**: Two complementary daily emails with specialized content
+- **AI Tooling Roundup**: 12:00 PM daily - Developer tools, frameworks, coding assistance
+- **AI Models & Releases**: 3:00 PM daily - New models, releases, enterprise features
+- **Separate Configuration System**: Independent configs for each email type
+- **Separate Cache Tracking**: Prevents duplicates within each email stream independently
+
+### 📧 Email Specialization
+- **AI Tooling (12 PM)**: OpenAI, Google Developers, GitHub, LangChain, AWS ML, HuggingFace
+- **AI Models (3 PM)**: HuggingFace, OpenAI, Anthropic, Microsoft AI, ArXiv AI/CL, Google AI
+- **Targeted Keywords**: Different keyword sets optimized for each content type
+- **Optimized Sources**: 8 total sources across both emails for comprehensive coverage
+
+### 🏗️ Architecture Enhancements
+- **Config Selection**: `--config config` vs `--config config_models`
+- **Dual Cache System**: `sent_articles.json` + `sent_articles_models.json`
+- **Separate Logging**: `aimailer.log` + `models.log` for independent monitoring
+- **Enhanced Pipeline**: Config-aware processing with separate tracking
+
+### ⏰ Updated Scheduling
+- **AI Tooling**: Daily at 12:00 PM (`0 12 * * *`)
+- **AI Models**: Daily at 3:00 PM (`0 15 * * *`)
+- **Queue Processing**: Every 15 minutes (unchanged)
+- **Log Rotation**: Sundays at 2:00 AM (unchanged)
+
+### 🛠️ New Components
+- `config_models.py` - Configuration for AI Models & Releases email
+- `run_models.sh` - Shell script for models email generation
+- Enhanced `tracker.py` - Support for multiple cache files
+- Enhanced `run.py` - Config selection and separate processing
+
+### 📊 Performance Improvements
+- **200+ articles processed daily** from 8 specialized sources
+- **22 articles selected daily** (12 tooling + 10 models)
+- **Separate duplicate tracking** prevents cross-contamination
+- **Optimized source weighting** for each content type
+
+### 🔧 Usage Updates
+```bash
+# Generate AI Tooling email
+python src/run.py --config config --max-items 12
+
+# Generate AI Models email  
+python src/run.py --config config_models --max-items 10
+```
+
+### Changed
+- **Email Count**: Single → Dual daily emails
+- **Schedule**: 8 AM → 12 PM & 3 PM
+- **Sources**: 6 → 8 total sources across both emails
+- **Cache System**: Single → Dual independent tracking
+- **Version**: 1.1.0 → 1.2.0
+
 ## [1.1.0] - 2025-11-26 - ENHANCED DAILY EDITION 🚀
 
 ### 🎉 Major Features Added
@@ -33,21 +88,6 @@ The format is based on "Keep a Changelog" and this project adheres to Semantic V
 - **New Component**: `tracker.py` for duplicate article prevention
 - **Enhanced Pipeline**: Fetcher → **Tracker** → Extractor → Summarizer → Selector → Composer → SQS → SMTP
 - **Cache Management**: Automatic cleanup and maintenance utilities
-
-### 📊 Updated Configuration
-- **Recipients**: Now supports multiple email addresses
-- **Schedule**: Updated to daily delivery
-- **Cache**: 30-day article retention policy
-
-### 🛠️ New Utilities
-- `manage_cache.py show` - View sent articles cache
-- `manage_cache.py clear` - Reset article tracking
-- Enhanced logging with duplicate filtering statistics
-
-### 📈 Performance Improvements
-- **Smarter Processing**: Only processes new articles, reducing computation
-- **Better Logging**: Shows duplicate filtering statistics
-- **Graceful Handling**: Continues working even with corrupted cache files
 
 ### Changed
 - **Email Subject**: "Weekly AI Tooling Roundup" → "Daily AI Tooling Roundup"
@@ -82,23 +122,6 @@ The format is based on "Keep a Changelog" and this project adheres to Semantic V
 - **Composer Module**: HTML email template generation
 - **Sender Module**: AWS SQS queuing and SMTP delivery
 - **Processor Module**: Queue processing and email sending
-
-### ⏰ Scheduling & Automation
-- **Email Generation**: Mondays at 8:00 AM (`0 8 * * 1`)
-- **Queue Processing**: Every 15 minutes (`*/15 * * * *`)
-- **Automated Delivery**: Complete end-to-end automation
-
-### 🔧 Infrastructure & Monitoring
-- **AWS SQS Queue**: `aimailer-email-queue` (us-east-1)
-- **Comprehensive Logging**: `aimailer.log` and `processor.log`
-- **Error Handling**: Graceful fallbacks and retry logic
-- **Production Monitoring**: Queue status and delivery tracking
-
-### 📈 Performance Metrics
-- **Articles Processed**: 100+ per week from 6 sources
-- **Articles Selected**: 12 per email (2 from each source)
-- **Processing Time**: ~5 minutes per email generation
-- **Delivery Reliability**: 99%+ (SQS + retry logic)
 
 ### Changed
 - **Schedule**: Updated from Friday 9 AM to Monday 8 AM

@@ -1,24 +1,25 @@
 {
   "schemaVersion": "1.0.0",
-  "name": "AIMailer - Daily AI Tooling Roundup",
+  "name": "AIMailer - Dual Daily AI Roundups",
   "slug": "aimailer",
-  "summary": "Automated daily email that summarizes ~12 recent articles about AI tools, agentic systems, and model releases for AI developers.",
-  "version": "1.1.0",
+  "summary": "Automated dual daily emails: AI Tooling Roundup (12 PM) and AI Models & Releases (3 PM) for AI developers.",
+  "version": "1.2.0",
   "license": "proprietary",
   "status": "production",
   "goals": [
-    "Deliver a daily curated email of ~12 relevant AI tooling/model updates",
-    "Automate fetch → dedupe → summarize → rank → email pipeline",
+    "Deliver two complementary daily emails covering AI tools and model releases",
+    "Automate fetch → dedupe → summarize → rank → email pipeline for both streams",
     "Prioritise high-signal official releases and dev-focused tooling updates",
-    "Prevent duplicate articles with intelligent tracking"
+    "Prevent duplicate articles with intelligent tracking per email type"
   ],
   "primary_features": [
+    "Dual email system: AI Tooling (12 PM) + AI Models & Releases (3 PM)",
     "RSS/API/Local-search fetchers (Perplexica, SEARXNG)",
     "Readability-style extraction and LLM summarization (2–3 sentences + why devs care)",
-    "Deduping, scoring and selection of top ~12 items with source diversity",
+    "Deduping, scoring and selection with source diversity",
     "HTML email composition and automated sending via AWS SQS + SMTP",
-    "Duplicate article prevention with 30-day tracking",
-    "Multiple recipient support"
+    "Separate duplicate prevention tracking for each email type",
+    "Multiple recipient support with individual delivery"
   ],
   "secondary_features": [
     "Source diversity algorithm (round-robin selection)",
@@ -26,8 +27,27 @@
     "AWS SQS queuing for reliable email delivery",
     "Automated scheduling via cron jobs",
     "Comprehensive logging and monitoring",
-    "Article cache management utilities"
+    "Article cache management utilities",
+    "Log rotation and maintenance"
   ],
+  "email_types": {
+    "ai_tooling": {
+      "name": "Daily AI Tooling Roundup",
+      "schedule": "Daily 12:00 PM",
+      "focus": "Developer tools, frameworks, coding assistance, business tooling",
+      "sources": ["OpenAI Blog", "Google Developers", "GitHub Blog", "LangChain", "AWS ML", "HuggingFace"],
+      "keywords": ["mcp", "agent", "cli", "tooling", "frameworks", "coding"],
+      "cache_file": "sent_articles.json"
+    },
+    "ai_models": {
+      "name": "Daily AI Models & Releases",
+      "schedule": "Daily 3:00 PM", 
+      "focus": "New models, releases, coding AI, enterprise features, major updates",
+      "sources": ["HuggingFace", "OpenAI", "Anthropic", "Microsoft AI", "ArXiv AI/CL", "Google AI"],
+      "keywords": ["model", "release", "gpt", "gemini", "claude", "opus", "grok", "fine-tuning", "enterprise"],
+      "cache_file": "sent_articles_models.json"
+    }
+  },
   "tech_stack": {
     "language": "python",
     "http_clients": "requests",
@@ -36,7 +56,7 @@
     "email": "AWS SQS + SMTP (Gmail)",
     "scheduler": "cron",
     "queue": "AWS SQS",
-    "cache": "JSON file-based article tracking",
+    "cache": "JSON file-based article tracking (separate per email type)",
     "dependencies": ["requests", "beautifulsoup4", "pyyaml", "pytest", "feedparser", "python-dateutil", "boto3"]
   },
   "security_considerations": [
@@ -50,27 +70,14 @@
     "implementation": "completed",
     "testing": "completed",
     "deployment": "production",
-    "notes": "Fully operational system with daily delivery and duplicate prevention"
+    "notes": "Fully operational dual-email system with separate tracking and scheduling"
   },
-  "sources": [
-    "https://openai.com/blog/rss.xml",
-    "https://blog.google/technology/developers/rss/",
-    "https://github.blog/feed/",
-    "https://huggingface.co/blog/feed.xml",
-    "https://aws.amazon.com/blogs/machine-learning/feed/",
-    "https://blog.langchain.dev/feed/"
-  ],
-  "keywords": ["mcp", "agent", "cli", "opencode", "gemini", "gpt-5.1", "ai", "llm", "model", "langchain", "huggingface"],
-  "schedule": "Daily 08:00",
-  "recipients": [
-    "stephen.z.phillips@sparktsl.com",
-    "stephen.phillips.work@gmail.com"
-  ],
   "architecture": {
-    "overview": "Fetcher -> Tracker -> Extractor -> Summarizer -> Selector -> Composer -> SQS Queue -> SMTP Sender",
+    "overview": "Dual Pipeline: Config Selection → Fetcher → Tracker → Extractor → Summarizer → Selector → Composer → SQS Queue → SMTP Sender",
     "components": {
+      "config": { "description": "Dual configuration system for different email types", "implementation": "config.py + config_models.py", "files": ["config.py", "config_models.py"], "status": "completed" },
       "fetcher": { "description": "Fetch articles from RSS feeds and local search", "implementation": "feedparser + requests", "files": ["fetchers.py"], "status": "completed" },
-      "tracker": { "description": "Track sent articles and prevent duplicates", "implementation": "JSON file-based cache with 30-day retention", "files": ["tracker.py"], "status": "completed" },
+      "tracker": { "description": "Track sent articles and prevent duplicates per email type", "implementation": "JSON file-based cache with separate files", "files": ["tracker.py"], "status": "completed" },
       "extractor": { "description": "Extract clean article text from HTML", "implementation": "custom regex-based cleaner", "files": ["extractor.py"], "status": "completed" },
       "summarizer": { "description": "Call LLM to summarise articles", "implementation": "ollama + openai fallback", "files": ["summarizer.py"], "status": "completed" },
       "selector": { "description": "Dedupe, score and select top items with source diversity", "implementation": "round-robin source selection", "files": ["selector.py"], "status": "completed" },
@@ -82,44 +89,51 @@
   "infrastructure": {
     "type": "cron jobs + AWS SQS",
     "schedule": {
-      "generation": "0 8 * * * (Daily 8 AM)",
-      "processing": "*/15 * * * * (every 15 minutes)"
+      "ai_tooling": "0 12 * * * (Daily 12 PM)",
+      "ai_models": "0 15 * * * (Daily 3 PM)",
+      "processing": "*/15 * * * * (every 15 minutes)",
+      "log_rotation": "0 2 * * 0 (Sundays 2 AM)"
     },
     "aws_resources": {
       "sqs_queue": "https://sqs.us-east-1.amazonaws.com/900211028177/aimailer-email-queue"
     },
-    "files": ["run_aimailer.sh", "run_processor.sh", "process_email_queue.py", "manage_cache.py"]
+    "files": ["run_aimailer.sh", "run_models.sh", "run_processor.sh", "process_email_queue.py", "manage_cache.py", "rotate_logs.sh"]
   },
   "current_capabilities": [
-    "Automated daily email generation and delivery",
-    "Multi-source RSS feed processing (6 sources)",
+    "Automated dual daily email generation and delivery",
+    "Multi-source RSS feed processing (8 total sources across both emails)",
     "AI-powered article summarization via Ollama",
     "Source diversity algorithm ensuring balanced content",
     "Clean text extraction filtering code/JSON noise",
     "Reliable email delivery via AWS SQS + SMTP",
-    "Duplicate article prevention with 30-day tracking",
+    "Separate duplicate prevention tracking for each email type",
     "Multiple recipient support with individual delivery",
     "Comprehensive error handling and logging",
-    "Production-ready scheduling and monitoring"
+    "Production-ready scheduling and monitoring",
+    "Automatic log rotation and maintenance"
   ],
   "production_metrics": {
-    "sources_active": 6,
-    "articles_processed_per_day": "100+",
-    "articles_selected_per_email": 12,
+    "email_types": 2,
+    "sources_active": 8,
+    "articles_processed_per_day": "200+",
+    "articles_selected_per_day": 22,
     "delivery_reliability": "99%+ (SQS + retry logic)",
     "processing_time": "~5 minutes per email generation",
-    "duplicate_prevention": "30-day article tracking",
+    "duplicate_prevention": "30-day article tracking per email type",
     "recipients_supported": "multiple (currently 2)"
   },
   "contact": { "owner": "stephen.z.phillips@sparktsl.com" },
-  "lastUpdated": "2025-11-26T16:30:00Z",
+  "lastUpdated": "2025-11-26T16:55:00Z",
   "progress_percent": 100,
   "progress_state": "production",
   "deployment_status": "live",
-  "next_execution": "Daily at 08:00:00",
+  "next_execution": {
+    "ai_tooling": "Daily at 12:00 PM",
+    "ai_models": "Daily at 3:00 PM"
+  },
   "cache_management": {
-    "file": "sent_articles.json",
-    "retention": "30 days",
+    "files": ["sent_articles.json", "sent_articles_models.json"],
+    "retention": "30 days per email type",
     "utilities": ["manage_cache.py show", "manage_cache.py clear"]
   }
 }

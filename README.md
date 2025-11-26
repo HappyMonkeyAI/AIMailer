@@ -1,63 +1,64 @@
-# AIMailer - Daily AI Tooling Roundup
+# AIMailer - Dual Daily AI Roundups
 
-**Automated daily email digest of AI tools, models, and developer updates**
+**Automated dual daily email system: AI Tooling (12 PM) + AI Models & Releases (3 PM)**
 
 [![Status](https://img.shields.io/badge/Status-Production-green)](https://github.com/user/aimailer)
-[![Version](https://img.shields.io/badge/Version-1.1.0-blue)](https://github.com/user/aimailer)
+[![Version](https://img.shields.io/badge/Version-1.2.0-blue)](https://github.com/user/aimailer)
 [![Python](https://img.shields.io/badge/Python-3.12+-blue)](https://python.org)
 
 ## 🎯 Overview
 
-AIMailer is a production-ready system that automatically curates and delivers daily email roundups of the latest AI tooling, model releases, and developer-focused updates. It processes 100+ articles daily from major AI/ML sources and delivers a clean, summarized digest of the top 12 most relevant items with intelligent duplicate prevention.
+AIMailer is a production-ready system that delivers two complementary daily email roundups for AI developers:
+
+- **12:00 PM**: AI Tooling Roundup - Developer tools, frameworks, coding assistance
+- **3:00 PM**: AI Models & Releases - New models, releases, enterprise features
+
+Each email processes 100+ articles from specialized sources and delivers 10-12 most relevant items with intelligent duplicate prevention.
 
 ## ✨ Features
 
-- **🔄 Automated Pipeline**: RSS fetching → duplicate filtering → AI summarization → source diversity → email delivery
+- **🔄 Dual Email System**: Two specialized daily roundups with separate tracking
 - **🤖 AI-Powered**: Ollama-based summarization with OpenAI fallback
 - **📊 Source Diversity**: Round-robin selection ensures balanced content from all sources
 - **🧹 Clean Extraction**: Advanced HTML cleaning removes JavaScript/JSON noise
 - **☁️ Cloud-Native**: AWS SQS queuing with Gmail SMTP delivery
-- **📅 Scheduled**: Automated daily delivery every morning at 8:00 AM
-- **🚫 Duplicate Prevention**: 30-day article tracking prevents repeat content
+- **📅 Scheduled**: Automated dual delivery at 12 PM and 3 PM daily
+- **🚫 Duplicate Prevention**: 30-day article tracking per email type
 - **👥 Multiple Recipients**: Support for multiple email addresses
 - **🔍 Monitoring**: Comprehensive logging and error handling
 
-## 📧 Sample Output
+## 📧 Email Types
 
-Each email contains:
-- **12 curated articles** from 6 major AI/ML sources
-- **AI-generated summaries** (2-3 sentences each)
-- **Developer insights** explaining why each article matters
-- **Clean HTML formatting** with clickable links
-- **Source attribution** and publication dates
-- **No duplicate content** from previous 30 days
+### 🛠️ AI Tooling Roundup (12:00 PM)
+**Focus**: Developer tools, frameworks, coding assistance, business tooling
+- **Sources**: OpenAI Blog, Google Developers, GitHub Blog, LangChain, AWS ML, HuggingFace
+- **Keywords**: mcp, agent, cli, tooling, frameworks, coding
+- **Cache**: `sent_articles.json`
+
+### 🤖 AI Models & Releases (3:00 PM)  
+**Focus**: New models, releases, coding AI, enterprise features, major updates
+- **Sources**: HuggingFace, OpenAI, Anthropic, Microsoft AI, ArXiv AI/CL, Google AI
+- **Keywords**: model, release, GPT, Gemini, Claude, Opus, Grok, fine-tuning, enterprise
+- **Cache**: `sent_articles_models.json`
 
 ## 🏗️ Architecture
 
 ```
-RSS Feeds → Duplicate Filter → Content Fetcher → Text Extractor → AI Summarizer → 
-Source Selector → Email Composer → SQS Queue → SMTP Sender → Gmail
+Config Selection → RSS Feeds → Duplicate Filter → Content Fetcher → Text Extractor → 
+AI Summarizer → Source Selector → Email Composer → SQS Queue → SMTP Sender → Gmail
 ```
 
 ### Components
 
+- **Config** (`config.py` + `config_models.py`): Dual configuration system
 - **Fetcher** (`fetchers.py`): RSS feed processing with feedparser
-- **Tracker** (`tracker.py`): Duplicate article prevention with 30-day cache
+- **Tracker** (`tracker.py`): Separate duplicate prevention per email type
 - **Extractor** (`extractor.py`): Clean text extraction from HTML
 - **Summarizer** (`summarizer.py`): Ollama/OpenAI-powered summarization
 - **Selector** (`selector.py`): Source diversity and ranking algorithms
 - **Composer** (`composer.py`): HTML email template generation
 - **Sender** (`sender.py`): AWS SQS queuing and SMTP delivery
 - **Processor** (`process_email_queue.py`): Queue processing and email sending
-
-## 📊 Content Sources
-
-- **OpenAI Blog** - Latest AI model releases and research
-- **Google Developers** - AI platform and tool updates
-- **GitHub Blog** - Developer workflow and coding tools
-- **HuggingFace** - Open-source AI models and datasets
-- **AWS ML Blog** - Cloud AI/ML services and tools
-- **LangChain Blog** - AI application development frameworks
 
 ## 🚀 Quick Start
 
@@ -104,7 +105,7 @@ AWS_REGION="us-east-1"
 
 ### Multiple Recipients
 
-Edit `src/aimailer/config.py`:
+Edit both `src/aimailer/config.py` and `src/aimailer/config_models.py`:
 ```python
 RECIPIENTS = [
     'user1@example.com',
@@ -116,16 +117,19 @@ RECIPIENTS = [
 ### Usage
 
 ```bash
-# Generate and send email manually
-python src/run.py --max-items 12
+# Generate AI Tooling email
+python src/run.py --config config --max-items 12
+
+# Generate AI Models email
+python src/run.py --config config_models --max-items 10
 
 # Process email queue
 ./run_processor.sh
 
 # Check logs
-tail -f aimailer.log processor.log
+tail -f aimailer.log models.log processor.log
 
-# Manage article cache
+# Manage article caches
 python manage_cache.py show    # View sent articles
 python manage_cache.py clear   # Reset cache
 ```
@@ -135,11 +139,17 @@ python manage_cache.py clear   # Reset cache
 The system runs automatically via cron jobs:
 
 ```bash
-# Daily email generation (every day 8 AM)
-0 8 * * * /home/stephen/AIMailer/run_aimailer.sh
+# AI Tooling Roundup (12 PM daily)
+0 12 * * * /home/stephen/AIMailer/run_aimailer.sh
+
+# AI Models & Releases (3 PM daily)
+0 15 * * * /home/stephen/AIMailer/run_models.sh
 
 # Queue processing (every 15 minutes)
 */15 * * * * /home/stephen/AIMailer/run_processor.sh >> /home/stephen/AIMailer/processor.log 2>&1
+
+# Log rotation (Sundays 2 AM)
+0 2 * * 0 /home/stephen/AIMailer/rotate_logs.sh >> /home/stephen/AIMailer/rotation.log 2>&1
 ```
 
 ## 📁 Project Structure
@@ -148,82 +158,67 @@ The system runs automatically via cron jobs:
 AIMailer/
 ├── src/
 │   ├── aimailer/
-│   │   ├── fetchers.py      # RSS feed processing
-│   │   ├── tracker.py       # Duplicate prevention
-│   │   ├── extractor.py     # HTML text extraction
-│   │   ├── summarizer.py    # AI summarization
-│   │   ├── selector.py      # Content selection & diversity
-│   │   ├── composer.py      # Email composition
-│   │   ├── sender.py        # SQS queuing & SMTP
-│   │   └── config.py        # Configuration
-│   ├── run.py               # Main pipeline orchestrator
-│   └── process_email_queue.py # Queue processor
-├── run_aimailer.sh          # Email generation script
-├── run_processor.sh         # Queue processing script
-├── manage_cache.py          # Cache management utility
-├── sent_articles.json       # Article tracking cache
-├── requirements.txt         # Python dependencies
-├── .env.example            # Environment template
-├── project.json            # Project metadata
-└── README.md              # This file
+│   │   ├── config.py            # AI Tooling configuration
+│   │   ├── config_models.py     # AI Models configuration
+│   │   ├── fetchers.py          # RSS feed processing
+│   │   ├── tracker.py           # Duplicate prevention
+│   │   ├── extractor.py         # HTML text extraction
+│   │   ├── summarizer.py        # AI summarization
+│   │   ├── selector.py          # Content selection & diversity
+│   │   ├── composer.py          # Email composition
+│   │   └── sender.py            # SQS queuing & SMTP
+│   ├── run.py                   # Main pipeline orchestrator
+│   └── process_email_queue.py   # Queue processor
+├── run_aimailer.sh              # AI Tooling generation script
+├── run_models.sh                # AI Models generation script
+├── run_processor.sh             # Queue processing script
+├── manage_cache.py              # Cache management utility
+├── rotate_logs.sh               # Log rotation script
+├── sent_articles.json           # AI Tooling tracking cache
+├── sent_articles_models.json    # AI Models tracking cache
+├── requirements.txt             # Python dependencies
+├── .env.example                # Environment template
+├── project.json                # Project metadata
+└── README.md                   # This file
 ```
 
 ## 🔧 Monitoring & Maintenance
 
 ### Logs
-- `aimailer.log` - Pipeline execution logs
+- `aimailer.log` - AI Tooling pipeline logs
+- `models.log` - AI Models pipeline logs
 - `processor.log` - Email delivery logs
+- `rotation.log` - Log rotation logs
 
 ### Cache Management
 ```bash
-# View sent articles cache
+# View sent articles cache (both types)
 python manage_cache.py show
 
 # Clear cache (reset duplicate tracking)
 python manage_cache.py clear
 
-# Check cache file directly
-cat sent_articles.json
-```
-
-### Queue Monitoring
-```bash
-# Check SQS queue status
-aws sqs get-queue-attributes --queue-url $SQS_QUEUE_URL --attribute-names ApproximateNumberOfMessages
-
-# View recent cron executions
-grep aimailer /var/log/syslog
+# Check cache files directly
+cat sent_articles.json sent_articles_models.json
 ```
 
 ### Performance Metrics
-- **Articles Processed**: 100+ per day
-- **Articles Selected**: 12 per email (2 from each source)
-- **Processing Time**: ~5 minutes per generation
+- **Emails Per Day**: 2 (AI Tooling + AI Models)
+- **Articles Processed**: 200+ per day from 8 sources
+- **Articles Selected**: 22 per day (12 + 10)
+- **Processing Time**: ~5 minutes per email generation
 - **Delivery Reliability**: 99%+ (SQS + retry logic)
-- **Duplicate Prevention**: 30-day article tracking
-- **Recipients**: Multiple supported (individual delivery)
+- **Duplicate Prevention**: 30-day tracking per email type
 
 ## 🛠️ Development
 
 ### Testing
 ```bash
-# Run tests
-pytest tests/
+# Test AI Tooling email
+python src/run.py --config config --dry-run --max-items 5
 
-# Test individual components
-python -c "from aimailer.fetchers import fetch_rss; print(len(fetch_rss('https://openai.com/blog/rss.xml')))"
-
-# Test duplicate filtering
-python src/run.py --dry-run --max-items 5
-```
-
-### Adding Sources
-Edit `src/aimailer/config.py`:
-```python
-DEFAULT_SOURCES = [
-    'https://new-source.com/feed.xml',
-    # ... existing sources
-]
+# Test AI Models email
+python src/run.py --config config_models --dry-run --max-items 5
 ```
 
 ## 📋 Dependencies
@@ -253,4 +248,4 @@ Proprietary - Internal use only
 
 ---
 
-**Status**: ✅ Production Ready | **Next Email**: Daily at 8:00 AM | **Cache**: 30-day duplicate prevention
+**Status**: ✅ Production Ready | **Next Emails**: Daily at 12:00 PM & 3:00 PM | **Cache**: 30-day duplicate prevention per email type
