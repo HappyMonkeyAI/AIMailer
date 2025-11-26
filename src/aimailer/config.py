@@ -7,5 +7,9 @@ DEFAULT_SOURCES = [
     'https://blog.langchain.dev/feed/',
 ]
 KEYWORDS = ['mcp', 'agent', 'cli', 'opencode', 'gemini', 'gpt-5.1', 'ai', 'llm', 'model', 'langchain', 'huggingface']
-SCHEDULE = 'Fri 09:00'
-RECIPIENT = 'stephen.z.phillips@sparktsl.com'
+SCHEDULE = 'Daily 12:00'
+RECIPIENTS = [
+    'stephen.z.phillips@sparktsl.com',
+    'stephen.phillips.work@gmail.com',
+    'patricia.gruhala@sparktsl.com',
+]

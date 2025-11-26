@@ -54,13 +54,19 @@ def main(dry_run=False, max_items=12):
     composer = importlib.import_module('aimailer.composer')
     sender = importlib.import_module('aimailer.sender')
     selector = importlib.import_module('aimailer.selector')
+    tracker = importlib.import_module('aimailer.tracker')
     config = importlib.import_module('aimailer.config')
 
     print('Running AIMailer pipeline (dry_run=%s)' % dry_run)
     raw_items = fetch_sources(fetchers, config)
     print('Fetched', len(raw_items), 'seed items')
+    
+    # Filter out previously sent articles
+    new_items = tracker.filter_new_articles(raw_items)
+    print('Filtered to', len(new_items), 'new articles (removed', len(raw_items) - len(new_items), 'duplicates)')
+    
     enriched = []
-    for it in raw_items:
+    for it in new_items:
         url = it.get('url')
         html = fetchers.fetch_http(url) if url else None
         text = extractor.extract_text(html) if html else (it.get('summary') or '')
@@ -71,11 +77,23 @@ def main(dry_run=False, max_items=12):
         it['confidence'] = summary_obj.get('confidence', 0.0)
         enriched.append(it)
     print('Enriched', len(enriched), 'items with summaries')
+    
     source_weight_map = {'openai.com': 2.0, 'google': 1.5, 'anthropic': 1.5}
     top = selector.select_top(enriched, getattr(config, 'KEYWORDS', []), source_weight_map, n=max_items)
     print('Selected', len(top), 'top items')
-    html_email = composer.compose_html('Weekly AI Tooling Roundup', top)
-    sender.send_email('Weekly AI Tooling Roundup', html_email, getattr(config, 'RECIPIENT', 'stephen.z.phillips@sparktsl.com'), dry_run=dry_run)
+    
+    if not top:
+        print('No new articles to send today')
+        return
+    
+    html_email = composer.compose_html('Daily AI Tooling Roundup', top)
+    sender.send_email('Daily AI Tooling Roundup', html_email, getattr(config, 'RECIPIENTS', [config.RECIPIENT]) if hasattr(config, 'RECIPIENT') else config.RECIPIENTS, dry_run=dry_run)
+    
+    # Mark articles as sent (only if not dry run)
+    if not dry_run:
+        tracker.mark_articles_sent(top)
+        print('Marked', len(top), 'articles as sent')
+    
     # Save sample output for inspection
     out_path = os.environ.get('AIMAILER_DRYOUT', 'aimailer_last_dryrun.html')
     with open(out_path, 'w') as f:

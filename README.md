@@ -1,23 +1,25 @@
-# AIMailer - Weekly AI Tooling Roundup
+# AIMailer - Daily AI Tooling Roundup
 
-**Automated weekly email digest of AI tools, models, and developer updates**
+**Automated daily email digest of AI tools, models, and developer updates**
 
 [![Status](https://img.shields.io/badge/Status-Production-green)](https://github.com/user/aimailer)
-[![Version](https://img.shields.io/badge/Version-1.0.0-blue)](https://github.com/user/aimailer)
+[![Version](https://img.shields.io/badge/Version-1.1.0-blue)](https://github.com/user/aimailer)
 [![Python](https://img.shields.io/badge/Python-3.12+-blue)](https://python.org)
 
 ## 🎯 Overview
 
-AIMailer is a production-ready system that automatically curates and delivers weekly email roundups of the latest AI tooling, model releases, and developer-focused updates. It processes 100+ articles weekly from major AI/ML sources and delivers a clean, summarized digest of the top 12 most relevant items.
+AIMailer is a production-ready system that automatically curates and delivers daily email roundups of the latest AI tooling, model releases, and developer-focused updates. It processes 100+ articles daily from major AI/ML sources and delivers a clean, summarized digest of the top 12 most relevant items with intelligent duplicate prevention.
 
 ## ✨ Features
 
-- **🔄 Automated Pipeline**: RSS fetching → AI summarization → source diversity → email delivery
+- **🔄 Automated Pipeline**: RSS fetching → duplicate filtering → AI summarization → source diversity → email delivery
 - **🤖 AI-Powered**: Ollama-based summarization with OpenAI fallback
 - **📊 Source Diversity**: Round-robin selection ensures balanced content from all sources
 - **🧹 Clean Extraction**: Advanced HTML cleaning removes JavaScript/JSON noise
 - **☁️ Cloud-Native**: AWS SQS queuing with Gmail SMTP delivery
-- **📅 Scheduled**: Automated weekly delivery every Monday at 8:00 AM
+- **📅 Scheduled**: Automated daily delivery every morning at 8:00 AM
+- **🚫 Duplicate Prevention**: 30-day article tracking prevents repeat content
+- **👥 Multiple Recipients**: Support for multiple email addresses
 - **🔍 Monitoring**: Comprehensive logging and error handling
 
 ## 📧 Sample Output
@@ -28,17 +30,19 @@ Each email contains:
 - **Developer insights** explaining why each article matters
 - **Clean HTML formatting** with clickable links
 - **Source attribution** and publication dates
+- **No duplicate content** from previous 30 days
 
 ## 🏗️ Architecture
 
 ```
-RSS Feeds → Content Fetcher → Text Extractor → AI Summarizer → 
+RSS Feeds → Duplicate Filter → Content Fetcher → Text Extractor → AI Summarizer → 
 Source Selector → Email Composer → SQS Queue → SMTP Sender → Gmail
 ```
 
 ### Components
 
 - **Fetcher** (`fetchers.py`): RSS feed processing with feedparser
+- **Tracker** (`tracker.py`): Duplicate article prevention with 30-day cache
 - **Extractor** (`extractor.py`): Clean text extraction from HTML
 - **Summarizer** (`summarizer.py`): Ollama/OpenAI-powered summarization
 - **Selector** (`selector.py`): Source diversity and ranking algorithms
@@ -98,6 +102,17 @@ SQS_QUEUE_URL="your-sqs-queue-url"
 AWS_REGION="us-east-1"
 ```
 
+### Multiple Recipients
+
+Edit `src/aimailer/config.py`:
+```python
+RECIPIENTS = [
+    'user1@example.com',
+    'user2@example.com',
+    'team@example.com',
+]
+```
+
 ### Usage
 
 ```bash
@@ -109,6 +124,10 @@ python src/run.py --max-items 12
 
 # Check logs
 tail -f aimailer.log processor.log
+
+# Manage article cache
+python manage_cache.py show    # View sent articles
+python manage_cache.py clear   # Reset cache
 ```
 
 ## ⏰ Automated Scheduling
@@ -116,8 +135,8 @@ tail -f aimailer.log processor.log
 The system runs automatically via cron jobs:
 
 ```bash
-# Weekly email generation (Mondays 8 AM)
-0 8 * * 1 /home/stephen/AIMailer/run_aimailer.sh
+# Daily email generation (every day 8 AM)
+0 8 * * * /home/stephen/AIMailer/run_aimailer.sh
 
 # Queue processing (every 15 minutes)
 */15 * * * * /home/stephen/AIMailer/run_processor.sh >> /home/stephen/AIMailer/processor.log 2>&1
@@ -130,6 +149,7 @@ AIMailer/
 ├── src/
 │   ├── aimailer/
 │   │   ├── fetchers.py      # RSS feed processing
+│   │   ├── tracker.py       # Duplicate prevention
 │   │   ├── extractor.py     # HTML text extraction
 │   │   ├── summarizer.py    # AI summarization
 │   │   ├── selector.py      # Content selection & diversity
@@ -140,6 +160,8 @@ AIMailer/
 │   └── process_email_queue.py # Queue processor
 ├── run_aimailer.sh          # Email generation script
 ├── run_processor.sh         # Queue processing script
+├── manage_cache.py          # Cache management utility
+├── sent_articles.json       # Article tracking cache
 ├── requirements.txt         # Python dependencies
 ├── .env.example            # Environment template
 ├── project.json            # Project metadata
@@ -152,6 +174,18 @@ AIMailer/
 - `aimailer.log` - Pipeline execution logs
 - `processor.log` - Email delivery logs
 
+### Cache Management
+```bash
+# View sent articles cache
+python manage_cache.py show
+
+# Clear cache (reset duplicate tracking)
+python manage_cache.py clear
+
+# Check cache file directly
+cat sent_articles.json
+```
+
 ### Queue Monitoring
 ```bash
 # Check SQS queue status
@@ -162,10 +196,12 @@ grep aimailer /var/log/syslog
 ```
 
 ### Performance Metrics
-- **Articles Processed**: 100+ per week
+- **Articles Processed**: 100+ per day
 - **Articles Selected**: 12 per email (2 from each source)
 - **Processing Time**: ~5 minutes per generation
 - **Delivery Reliability**: 99%+ (SQS + retry logic)
+- **Duplicate Prevention**: 30-day article tracking
+- **Recipients**: Multiple supported (individual delivery)
 
 ## 🛠️ Development
 
@@ -176,6 +212,9 @@ pytest tests/
 
 # Test individual components
 python -c "from aimailer.fetchers import fetch_rss; print(len(fetch_rss('https://openai.com/blog/rss.xml')))"
+
+# Test duplicate filtering
+python src/run.py --dry-run --max-items 5
 ```
 
 ### Adding Sources
@@ -214,4 +253,4 @@ Proprietary - Internal use only
 
 ---
 
-**Status**: ✅ Production Ready | **Next Email**: Monday, December 2nd, 2025 at 8:00 AM
+**Status**: ✅ Production Ready | **Next Email**: Daily at 8:00 AM | **Cache**: 30-day duplicate prevention
