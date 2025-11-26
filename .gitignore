@@ -4,15 +4,13 @@ __pycache__/
 *.pyo
 *.pyd
 .env
-.env.*
 
 # Virtualenv
 venv/
-.env
 
 # Docker
 *.dockerignore
 
 # DevSys workspace (if present)
 devsys/workspace/
-devsys/*
+# Keep the devsys submodule files tracked but ignore runtime workspace output
