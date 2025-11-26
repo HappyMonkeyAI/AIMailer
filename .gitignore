@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.env.*
+
+# Virtualenv
+venv/
+.env
+
+# Docker
+*.dockerignore
+
+# DevSys workspace (if present)
+devsys/workspace/
+devsys/*

@@ -1,0 +1,9 @@
+sources:
+  - https://openai.com/blog/
+  - https://developers.googleblog.com/
+keywords:
+  - mcp
+  - agent
+  - cli
+schedule: 'Fri 09:00'
+recipient: stephen.z.phillips@sparktsl.com
