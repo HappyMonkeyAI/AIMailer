@@ -1,6 +1,8 @@
 import argparse
 import importlib
 import os
+from dotenv import load_dotenv
+load_dotenv()
 from typing import List
 
 
@@ -12,8 +14,8 @@ def fetch_sources(fetchers, config):
         items.extend(rss_items)
     
     # Query local search endpoints if configured
-    perplexica = os.environ.get('PERPLEXICA_URL', 'http://10.0.10.46:3030/discover')
-    searx = os.environ.get('SEARXNG_URL', 'http://10.0.10.46:4040')
+    perplexica = os.environ.get('PERPLEXICA_URL', 'http://192.168.1.2:3030/discover')
+    searx = os.environ.get('SEARXNG_URL', 'http://192.168.1.2:4040')
     keywords = getattr(config, 'KEYWORDS', [])
     q = ' '.join(keywords[:5]) if keywords else 'ai'
     

@@ -5,3 +5,4 @@ pytest
 feedparser
 python-dateutil
 boto3
+python-dotenv

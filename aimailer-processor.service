@@ -5,13 +5,14 @@ After=network.target
 [Service]
 Type=simple
 User=stephen
-WorkingDirectory=/home/stephen/AIMailer
-Environment=PATH=/home/stephen/AIMailer/venv/bin
-ExecStart=/home/stephen/AIMailer/venv/bin/python /home/stephen/AIMailer/src/process_email_queue.py
+WorkingDirectory=/var/www/html/happymonkey.ai/AIMailer/
+Environment=PATH=/var/www/html/happymonkey.ai/AIMailer/venv/bin
+EnvironmentFile=/var/www/html/happymonkey.ai/AIMailer/.env
+ExecStart=/bin/bash -lc 'source /var/www/html/happymonkey.ai/AIMailer/venv/bin/activate && python /var/www/html/happymonkey.ai/AIMailer/src/process_email_queue.py'
 Restart=always
 RestartSec=30
-StandardOutput=append:/home/stephen/AIMailer/processor.log
-StandardError=append:/home/stephen/AIMailer/processor.log
+StandardOutput=append:/var/www/html/happymonkey.ai/AIMailer/processor.log
+StandardError=append:/var/www/html/happymonkey.ai/AIMailer/processor.log
 
 [Install]
 WantedBy=multi-user.target

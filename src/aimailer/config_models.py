@@ -17,9 +17,9 @@ KEYWORDS = [
 ]
 SCHEDULE = 'Daily 15:00'
 RECIPIENTS = [
-    'stephen.z.phillips@sparktsl.com',
+    #'stephen.z.phillips@sparktsl.com',
     'stephen.phillips.work@gmail.com',
 ]
 EMAIL_SUBJECT = 'Daily AI Models & Releases Roundup'
 EMAIL_TITLE = 'Daily AI Models & Releases Roundup'
-CACHE_FILE = '/home/stephen/AIMailer/sent_articles_models.json'
+CACHE_FILE = '/var/www/html/happymonkey.ai/AIMailer/sent_articles_models.json'

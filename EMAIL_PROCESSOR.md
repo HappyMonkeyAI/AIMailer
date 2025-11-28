@@ -24,10 +24,10 @@ The AIMailer uses AWS SQS for reliable email delivery. Emails are queued by the 
 ### Cron Jobs
 ```bash
 # Generate weekly emails (Fridays 9 AM)
-0 9 * * 5 /home/stephen/AIMailer/run_aimailer.sh
+0 9 * * 5 /var/www/html/happymonkey.ai/AIMailer/run_aimailer.sh
 
 # Process email queue (every 15 minutes)
-*/15 * * * * /home/stephen/AIMailer/run_processor.sh >> /home/stephen/AIMailer/processor.log 2>&1
+*/15 * * * * /var/www/html/happymonkey.ai/AIMailer/run_processor.sh >> /var/www/html/happymonkey.ai/AIMailer/processor.log 2>&1
 ```
 
 ## Configuration

@@ -3,7 +3,7 @@ import json
 from datetime import datetime, timedelta
 from typing import List, Dict, Set
 
-DEFAULT_CACHE_FILE = '/home/stephen/AIMailer/sent_articles.json'
+DEFAULT_CACHE_FILE = '/var/www/html/happymonkey.ai/AIMailer/sent_articles.json'
 CACHE_DAYS = 30  # Keep track for 30 days
 
 

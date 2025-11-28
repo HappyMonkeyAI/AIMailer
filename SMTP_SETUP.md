@@ -14,7 +14,7 @@
 
 ## Test SMTP Setup
 ```bash
-cd /home/stephen/AIMailer
+cd /var/www/html/happymonkey.ai/AIMailer
 source venv/bin/activate
 
 # Test with your app password

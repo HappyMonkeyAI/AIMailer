@@ -1,7 +1,7 @@
 #!/bin/bash
 # Simple log rotation for AIMailer
 
-LOG_DIR="/home/stephen/AIMailer"
+LOG_DIR="/var/www/html/happymonkey.ai/AIMailer"
 MAX_SIZE="10M"  # Rotate when logs exceed 10MB
 KEEP_DAYS=30    # Keep logs for 30 days
 

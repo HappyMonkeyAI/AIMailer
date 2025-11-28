@@ -140,16 +140,16 @@ The system runs automatically via cron jobs:
 
 ```bash
 # AI Tooling Roundup (12 PM daily)
-0 12 * * * /home/stephen/AIMailer/run_aimailer.sh
+0 12 * * * /var/www/html/happymonkey.ai/AIMailer/run_aimailer.sh
 
 # AI Models & Releases (3 PM daily)
-0 15 * * * /home/stephen/AIMailer/run_models.sh
+0 15 * * * /var/www/html/happymonkey.ai/AIMailer/run_models.sh
 
 # Queue processing (every 15 minutes)
-*/15 * * * * /home/stephen/AIMailer/run_processor.sh >> /home/stephen/AIMailer/processor.log 2>&1
+*/15 * * * * /var/www/html/happymonkey.ai/AIMailer/run_processor.sh >> /var/www/html/happymonkey.ai/AIMailer/processor.log 2>&1
 
 # Log rotation (Sundays 2 AM)
-0 2 * * 0 /home/stephen/AIMailer/rotate_logs.sh >> /home/stephen/AIMailer/rotation.log 2>&1
+0 2 * * 0 /var/www/html/happymonkey.ai/AIMailer/rotate_logs.sh >> /var/www/html/happymonkey.ai/AIMailer/rotation.log 2>&1
 ```
 
 ## 📁 Project Structure
