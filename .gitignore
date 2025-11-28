@@ -7,6 +7,21 @@ __pycache__/
 
 # Virtualenv
 venv/
+venv_test/
+
+# Logs and runtime
+*.log
+aimailer.log
+processor.log
+models.log
+
+# Generated HTML / dry-run output
+aimailer_last_dryrun*.html
+aimailer_last_dryrun_config.html
+
+# State / caches
+sent_articles.json
+sent_articles_models.json
 
 # Docker
 *.dockerignore
@@ -14,3 +29,12 @@ venv/
 # DevSys workspace (if present)
 devsys/workspace/
 # Keep the devsys submodule files tracked but ignore runtime workspace output
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/
+
+# Misc
+*.pid
+*.sqlite3
