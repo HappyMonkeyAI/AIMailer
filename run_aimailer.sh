@@ -1,4 +1,5 @@
 #!/bin/bash
+echo "$(date): Starting AIMailer execution" >> /var/www/html/happymonkey.ai/AIMailer/aimailer.log
 cd /var/www/html/happymonkey.ai/AIMailer
 source venv/bin/activate
 # Use SQS for email sending (disable dry-run)
@@ -10,3 +11,4 @@ if [ -f .env ]; then
 fi
 
 python3 src/run.py --max-items 12 >> /var/www/html/happymonkey.ai/AIMailer/aimailer.log 2>&1
+echo "$(date): Finished AIMailer execution" >> /var/www/html/happymonkey.ai/AIMailer/aimailer.log

@@ -21,7 +21,6 @@ Each email processes 100+ articles from specialized sources and delivers 10-12 m
 - **🤖 AI-Powered**: Ollama-based summarization with OpenAI fallback
 - **📊 Source Diversity**: Round-robin selection ensures balanced content from all sources
 - **🧹 Clean Extraction**: Advanced HTML cleaning removes JavaScript/JSON noise
-- **☁️ Cloud-Native**: AWS SQS queuing with Gmail SMTP delivery
 - **📅 Scheduled**: Automated dual delivery at 12 PM and 3 PM daily
 - **🚫 Duplicate Prevention**: 30-day article tracking per email type
 - **👥 Multiple Recipients**: Support for multiple email addresses
