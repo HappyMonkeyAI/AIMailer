@@ -11,6 +11,7 @@ def fetch_sources(fetchers, config):
     # Fetch RSS feeds from configured sources
     for url in getattr(config, 'DEFAULT_SOURCES', []):
         rss_items = fetchers.fetch_rss(url)
+        print(f'Fetched {len(rss_items)} items from {url}')
         items.extend(rss_items)
     
     # Query local search endpoints if configured

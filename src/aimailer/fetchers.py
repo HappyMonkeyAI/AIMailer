@@ -18,7 +18,7 @@ def fetch_rss(url: str) -> List[Dict]:
     try:
         feed = feedparser.parse(url)
         items = []
-        for entry in feed.entries[:20]:  # Limit to 20 most recent
+        for entry in feed.entries[:50]:  # Limit to 50 most recent
             items.append({
                 'title': getattr(entry, 'title', ''),
                 'url': getattr(entry, 'link', ''),
