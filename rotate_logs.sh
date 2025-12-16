@@ -28,6 +28,8 @@ rotate_log() {
 # Rotate logs if they're too big
 rotate_log "$LOG_DIR/aimailer.log"
 rotate_log "$LOG_DIR/processor.log"
+rotate_log "$LOG_DIR/run_processor.log"
+rotate_log "$LOG_DIR/rotation.log"
 
 # Clean up old compressed logs (older than 30 days)
 find "$LOG_DIR" -name "*.log.*.gz" -mtime +$KEEP_DAYS -delete
