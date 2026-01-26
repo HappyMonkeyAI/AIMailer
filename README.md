@@ -59,7 +59,28 @@ AI Summarizer → Source Selector → Email Composer → SQS Queue → SMTP Send
 - **Sender** (`sender.py`): AWS SQS queuing and SMTP delivery
 - **Processor** (`process_email_queue.py`): Queue processing and email sending
 
-## 🚀 Quick Start
+## 🐳 Quick Start with Docker
+
+The fastest way to get the AIMailer web control panel up and running is using Docker Compose.
+
+```bash
+# Clone the repository
+git clone <repository>
+cd AIMailer
+
+# Start all services (Database, Redis, Web, Celery)
+docker-compose up -d --build
+
+# Create a superuser to access the admin panel
+docker-compose exec web python manage.py createsuperuser
+```
+
+Once started, the services will be available at:
+- **Web Admin**: [http://localhost:8001/admin](http://localhost:8001/admin)
+- **Database**: Port 5432 (Internal)
+- **Redis**: Port 6379 (Internal)
+
+## 🚀 Manual Installation
 
 ### Prerequisites
 

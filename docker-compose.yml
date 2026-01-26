@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=aimailer_db
+      - POSTGRES_USER=aimailer_user
+      - POSTGRES_PASSWORD=aimailer_password
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+
+  web:
+    build:
+      context: ./web
+    command: python manage.py runserver 0.0.0.0:8001
+    volumes:
+      - ./web:/app/web
+    ports:
+      - "8001:8001"
+    environment:
+      - DEBUG=True
+      - SECRET_KEY=django-insecure-docker-dev-key
+      - DB_ENGINE=django.db.backends.postgresql
+      - DB_NAME=aimailer_db
+      - DB_USER=aimailer_user
+      - DB_PASSWORD=aimailer_password
+      - DB_HOST=db
+      - DB_PORT=5432
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+
+  worker:
+    build:
+      context: ./web
+    command: celery -A config worker -l info
+    volumes:
+      - ./web:/app/web
+    environment:
+      - DEBUG=True
+      - SECRET_KEY=django-insecure-docker-dev-key
+      - DB_ENGINE=django.db.backends.postgresql
+      - DB_NAME=aimailer_db
+      - DB_USER=aimailer_user
+      - DB_PASSWORD=aimailer_password
+      - DB_HOST=db
+      - DB_PORT=5432
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+
+  beat:
+    build:
+      context: ./web
+    command: celery -A config beat -l info
+    volumes:
+      - ./web:/app/web
+    environment:
+      - DEBUG=True
+      - SECRET_KEY=django-insecure-docker-dev-key
+      - DB_ENGINE=django.db.backends.postgresql
+      - DB_NAME=aimailer_db
+      - DB_USER=aimailer_user
+      - DB_PASSWORD=aimailer_password
+      - DB_HOST=db
+      - DB_PORT=5432
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+
+volumes:
+  postgres_data:
+  redis_data:
