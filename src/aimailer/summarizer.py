@@ -27,7 +27,11 @@ def call_ollama(prompt: str, max_tokens: int = 512) -> str:
             return data['completion']
         # Fallback: stringify
         return str(data)
-    except Exception:
+    except requests.RequestException as e:
+        print(f"Ollama API error: {e}")
+        return ''
+    except Exception as e:
+        print(f"Unexpected error calling Ollama: {e}")
         return ''
 
 
@@ -47,10 +51,15 @@ def summarize_text(text: str) -> Dict:
             import json
             obj = json.loads(ollama_out)
             return {'summary': obj.get('summary',''), 'why_dev_care': obj.get('why',''), 'tags': [t.strip() for t in obj.get('tags','').split(',') if t.strip()], 'confidence': 0.9}
-        except Exception:
+        except json.JSONDecodeError:
             # If not JSON, heuristic split: take first paragraph as summary
             summary = ollama_out.strip().split('\n\n')[0][:600]
             return {'summary': summary, 'why_dev_care': '', 'tags': [], 'confidence': 0.7}
+        except Exception:
+             # Fallback for other parsing errors
+            summary = ollama_out.strip().split('\n\n')[0][:600]
+            return {'summary': summary, 'why_dev_care': '', 'tags': [], 'confidence': 0.7}
+
     # If no Ollama result, fallback to stub or OpenAI if key present
     if API_KEY:
         # TODO: implement OpenAI call

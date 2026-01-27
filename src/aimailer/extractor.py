@@ -1,41 +1,25 @@
+import bleach
 import re
 
 
 def extract_text(html: str) -> str:
-    """Extract clean article text from HTML, filtering out code and structured data."""
+    """Extract clean article text from HTML using bleach for sanitization."""
     if not html:
         return ''
     
-    # Remove script tags and their content
+    # Pre-clean: Remove script and style tags AND their content completely.
+    # Bleach with strip=True removes the tags but leaves the content (e.g. <script>foo</script> -> foo).
     html = re.sub(r'<script[^>]*>.*?</script>', '', html, flags=re.DOTALL | re.IGNORECASE)
-    
-    # Remove style tags and their content
     html = re.sub(r'<style[^>]*>.*?</style>', '', html, flags=re.DOTALL | re.IGNORECASE)
     
-    # Remove JSON-LD structured data
-    html = re.sub(r'{\s*"@context"[^}]*}[^}]*}', '', html, flags=re.DOTALL)
+    # Allowed tags and attributes for initial cleaning
+    allowed_tags = ['p', 'div', 'br', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'article', 'section', 'b', 'i', 'u', 'em', 'strong', 'a']
+    allowed_attrs = {'a': ['href', 'title']}
     
-    # Remove common code patterns
-    html = re.sub(r'window\.[A-Z_]+[^;]*;', '', html)
-    html = re.sub(r'const\s+\w+[^;]*;', '', html)
-    html = re.sub(r'document\.[^;]*;', '', html)
+    # Sanitize HTML
+    clean_html = bleach.clean(html, tags=allowed_tags, attributes=allowed_attrs, strip=True)
     
-    # Remove navigation and UI elements
-    html = re.sub(r'Skip to main content', '', html, flags=re.IGNORECASE)
-    html = re.sub(r'The Keyword', '', html, flags=re.IGNORECASE)
-    html = re.sub(r'Share Twitter Facebook LinkedIn Mail Copy link', '', html, flags=re.IGNORECASE)
-    html = re.sub(r'Home Product news', '', html, flags=re.IGNORECASE)
-    
-    # Replace common block tags with newlines
-    html = re.sub(r'</?(p|div|br|li|h[1-6]|article|section)[^>]*>', '\n', html, flags=re.IGNORECASE)
-    
-    # Remove remaining tags
-    text = re.sub(r'<[^>]+>', '', html)
-    
-    # Clean up whitespace
-    text = re.sub(r'\s+', ' ', text).strip()
-    
-    # Remove common noise patterns
+    # Remove navigation and UI elements (still useful to remove noise text)
     noise_patterns = [
         r'Skip to main content',
         r'The Keyword',
@@ -51,9 +35,19 @@ def extract_text(html: str) -> str:
         r'browserID:'
     ]
     
+    text = clean_html
     for pattern in noise_patterns:
         text = re.sub(pattern, '', text, flags=re.IGNORECASE)
     
+    # Replace block tags with newlines for text extraction
+    text = re.sub(r'</?(p|div|br|li|h[1-6]|article|section)[^>]*>', '\n', text, flags=re.IGNORECASE)
+
+    # Remove remaining tags (strip=True removes tags, leaves content, but we are just removing allowed tags now)
+    text = bleach.clean(text, tags=[], strip=True)
+
+    # Clean up whitespace
+    text = re.sub(r'\s+', ' ', text).strip()
+
     # Split into sentences and keep only meaningful ones
     sentences = re.split(r'[.!?]+', text)
     clean_sentences = []

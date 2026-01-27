@@ -7,6 +7,20 @@ DEFAULT_CACHE_FILE = '/var/www/html/happymonkey.ai/AIMailer/sent_articles.json'
 CACHE_DAYS = 30  # Keep track for 30 days
 
 
+def _clean_old_entries(data: Dict[str, str], days: int = CACHE_DAYS) -> Dict[str, str]:
+    """Remove entries older than the specified number of days."""
+    cutoff = datetime.now() - timedelta(days=days)
+    cleaned_data = {}
+    for url, date_str in data.items():
+        try:
+            sent_date = datetime.fromisoformat(date_str)
+            if sent_date > cutoff:
+                cleaned_data[url] = date_str
+        except Exception:
+            continue
+    return cleaned_data
+
+
 def load_sent_articles(cache_file: str = None) -> Set[str]:
     """Load previously sent article URLs from cache."""
     cache_file = cache_file or DEFAULT_CACHE_FILE
@@ -17,20 +31,9 @@ def load_sent_articles(cache_file: str = None) -> Set[str]:
         with open(cache_file, 'r') as f:
             data = json.load(f)
         
-        # Clean old entries (older than CACHE_DAYS)
-        cutoff = datetime.now() - timedelta(days=CACHE_DAYS)
-        current_urls = set()
-        
-        for url, date_str in data.items():
-            try:
-                sent_date = datetime.fromisoformat(date_str)
-                if sent_date > cutoff:
-                    current_urls.add(url)
-            except:
-                continue
-        
-        return current_urls
-    except:
+        cleaned_data = _clean_old_entries(data)
+        return set(cleaned_data.keys())
+    except Exception:
         return set()
 
 
@@ -44,7 +47,7 @@ def save_sent_articles(sent_urls: Set[str], cache_file: str = None) -> None:
             try:
                 with open(cache_file, 'r') as f:
                     existing_data = json.load(f)
-            except:
+            except Exception:
                 pass
         
         # Add new URLs with current timestamp
@@ -53,15 +56,7 @@ def save_sent_articles(sent_urls: Set[str], cache_file: str = None) -> None:
             existing_data[url] = current_time
         
         # Clean old entries
-        cutoff = datetime.now() - timedelta(days=CACHE_DAYS)
-        cleaned_data = {}
-        for url, date_str in existing_data.items():
-            try:
-                sent_date = datetime.fromisoformat(date_str)
-                if sent_date > cutoff:
-                    cleaned_data[url] = date_str
-            except:
-                continue
+        cleaned_data = _clean_old_entries(existing_data)
         
         # Save to file
         with open(cache_file, 'w') as f:

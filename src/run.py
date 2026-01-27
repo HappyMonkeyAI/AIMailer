@@ -1,9 +1,10 @@
 import argparse
 import importlib
 import os
+import concurrent.futures
 from dotenv import load_dotenv
 load_dotenv()
-from typing import List
+from typing import List, Dict
 
 
 def fetch_sources(fetchers, config):
@@ -50,6 +51,24 @@ def fetch_sources(fetchers, config):
     return items
 
 
+def process_item(item, fetchers, extractor, summarizer):
+    """Fetch content, extract text, and summarize a single item."""
+    try:
+        url = item.get('url')
+        html = fetchers.fetch_http(url) if url else None
+        text = extractor.extract_text(html) if html else (item.get('summary') or '')
+        summary_obj = summarizer.summarize_text(text)
+
+        item['summary'] = summary_obj.get('summary', '')
+        item['why'] = summary_obj.get('why_dev_care', '')
+        item['tags'] = summary_obj.get('tags', [])
+        item['confidence'] = summary_obj.get('confidence', 0.0)
+        return item
+    except Exception as e:
+        print(f"Error processing item {item.get('url')}: {e}")
+        return item
+
+
 def main(dry_run=False, max_items=12, config_name='config'):
     fetchers = importlib.import_module('aimailer.fetchers')
     extractor = importlib.import_module('aimailer.extractor')
@@ -70,16 +89,20 @@ def main(dry_run=False, max_items=12, config_name='config'):
     print('Filtered to', len(new_items), 'new articles (removed', len(raw_items) - len(new_items), 'duplicates)')
     
     enriched = []
-    for it in new_items:
-        url = it.get('url')
-        html = fetchers.fetch_http(url) if url else None
-        text = extractor.extract_text(html) if html else (it.get('summary') or '')
-        summary_obj = summarizer.summarize_text(text)
-        it['summary'] = summary_obj.get('summary','')
-        it['why'] = summary_obj.get('why_dev_care','')
-        it['tags'] = summary_obj.get('tags',[])
-        it['confidence'] = summary_obj.get('confidence', 0.0)
-        enriched.append(it)
+    # Use ThreadPoolExecutor to process items in parallel
+    max_workers = min(10, len(new_items)) if len(new_items) > 0 else 1
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_item = {
+            executor.submit(process_item, item, fetchers, extractor, summarizer): item
+            for item in new_items
+        }
+        for future in concurrent.futures.as_completed(future_to_item):
+            try:
+                result = future.result()
+                enriched.append(result)
+            except Exception as e:
+                print(f"Item processing generated an exception: {e}")
+
     print('Enriched', len(enriched), 'items with summaries')
     
     source_weight_map = {'openai.com': 2.0, 'google': 1.5, 'anthropic': 1.5, 'huggingface': 2.0, 'microsoft': 1.5}
