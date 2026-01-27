@@ -64,7 +64,11 @@ class Newsletter(models.Model):
         null=True,
         related_name='newsletters'
     )
-    keywords = models.JSONField(default=list, blank=True)
+    keywords = models.JSONField(
+        default=list, 
+        blank=True, 
+        help_text=_('Comma-separated list of keywords for article selection (e.g., "ai, agent, mcp").')
+    )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
     visibility = models.CharField(max_length=20, choices=VISIBILITY_CHOICES, default='public')
     logo = models.ImageField(upload_to='newsletter_logos/', blank=True, null=True)
@@ -102,14 +106,20 @@ class NewsletterConfig(models.Model):
         on_delete=models.CASCADE,
         related_name='config'
     )
-    send_schedule = models.CharField(max_length=100, help_text='Cron expression')
+    send_schedule = models.CharField(
+        max_length=100, 
+        help_text=_('Cron expression (e.g., "0 9 * * *" for daily at 9am, "0 10 * * 1" for Mondays at 10am).')
+    )
     article_count = models.IntegerField(default=12)
     email_template = models.CharField(max_length=100, default='default')
     sender_name = models.CharField(max_length=255)
     sender_email = models.EmailField()
     reply_to_email = models.EmailField(blank=True)
     ai_summary_enabled = models.BooleanField(default=True)
-    config_json = models.JSONField(default=dict, help_text='Full configuration data')
+    config_json = models.JSONField(
+        default=dict, 
+        help_text=_('Advanced settings as JSON. Common keys: "email_subject", "dry_run" (bool), "source_weights" (dict of domain:weight).')
+    )
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
