@@ -165,6 +165,15 @@ docker exec -it aimailer-web-1 python manage.py reset_admin <email> --password <
 python manage.py reset_admin <email> --password <password> --username <optional_username>
 ```
 
+### Newsletter Admin UI Enhancements
+
+The Newsletter administration interface has been enhanced for better usability:
+
+- **Keywords JSON Handling**: The standard JSON textarea has been replaced with a simple comma-separated text input. The system automatically converts this to and from the required JSON array format transparently.
+- **Interactive Tooltips**: Field descriptions (help text) are now tucked behind blue eye icons (👁). Hover over these icons to see detailed information about each field.
+
+These features are powered by custom static assets located in `web/static/newsletters/`.
+
 ## API Endpoints
 
 ### Authentication

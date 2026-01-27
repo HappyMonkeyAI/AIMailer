@@ -27,6 +27,7 @@ python-dotenv>=1.0.0
 pyyaml>=6.0.1
 requests>=2.31.0
 python-dateutil>=2.8.2
+bleach>=6.1.0
 
 # Development
 django-debug-toolbar>=4.2.0

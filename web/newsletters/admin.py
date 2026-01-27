@@ -44,6 +44,12 @@ class NewsletterAdmin(admin.ModelAdmin):
     inlines = [NewsletterConfigInline, RSSSourceInline]
     readonly_fields = ['subscriber_count', 'total_sends', 'created_at', 'updated_at']
 
+    class Media:
+        css = {
+            'all': ('newsletters/css/admin_custom.css',)
+        }
+        js = ('newsletters/js/newsletter_admin.js',)
+
 
 @admin.register(RSSSource)
 class RSSSourceAdmin(admin.ModelAdmin):

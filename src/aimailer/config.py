@@ -1,3 +1,8 @@
+import os
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
 DEFAULT_SOURCES = [
     'https://openai.com/blog/rss.xml',
     'https://blog.google/technology/developers/rss/',
@@ -13,4 +18,4 @@ RECIPIENTS = [
 ]
 EMAIL_SUBJECT = 'Daily AI Tooling Roundup'
 EMAIL_TITLE = 'Daily AI Tooling Roundup'
-CACHE_FILE = '/var/www/html/happymonkey.ai/AIMailer/sent_articles.json'
+CACHE_FILE = os.environ.get('CACHE_FILE', str(BASE_DIR / 'sent_articles.json'))

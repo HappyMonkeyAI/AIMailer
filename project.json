@@ -2,33 +2,32 @@
   "schemaVersion": "1.0.0",
   "name": "AIMailer - Dual Daily AI Roundups",
   "slug": "aimailer",
-  "summary": "Automated dual daily emails: AI Tooling Roundup (12 PM) and AI Models & Releases (3 PM) for AI developers.",
-  "version": "1.2.0",
+  "summary": "Automated dual daily emails with a Django-based Web Control Panel for managing newsletters and subscribers.",
+  "version": "1.3.0",
   "license": "proprietary",
-  "status": "production",
+  "status": "in_development",
   "goals": [
     "Deliver two complementary daily emails covering AI tools and model releases",
     "Automate fetch → dedupe → summarize → rank → email pipeline for both streams",
-    "Prioritise high-signal official releases and dev-focused tooling updates",
-    "Prevent duplicate articles with intelligent tracking per email type"
+    "Provide a robust Web Control Panel for newsletter discovery and management",
+    "Enable user-friendly subscriber and newsletter administration"
   ],
   "primary_features": [
     "Dual email system: AI Tooling (12 PM) + AI Models & Releases (3 PM)",
+    "Django Web Control Panel: Manage newsletters, subscribers, and RSS sources",
     "RSS/API/Local-search fetchers (Perplexica, SEARXNG)",
-    "Readability-style extraction and LLM summarization (2–3 sentences + why devs care)",
-    "Deduping, scoring and selection with source diversity",
+    "Readability-style extraction and LLM summarization",
     "HTML email composition and automated sending via AWS SQS + SMTP",
-    "Separate duplicate prevention tracking for each email type",
-    "Multiple recipient support with individual delivery"
+    "Custom user model with email-based authentication and subscription tiers",
+    "Admin UI improvements: Interactive tooltips and easy keyword management"
   ],
   "secondary_features": [
     "Source diversity algorithm (round-robin selection)",
     "Clean text extraction (filters JavaScript/JSON noise)",
     "AWS SQS queuing for reliable email delivery",
-    "Automated scheduling via cron jobs",
-    "Comprehensive logging and monitoring",
-    "Article cache management utilities",
-    "Log rotation and maintenance"
+    "Automated scheduling via cron and Celery Beat",
+    "Robust superuser management via `reset_admin` command",
+    "Interactive Newsletter admin with JS-driven field conversion"
   ],
   "email_types": {
     "ai_tooling": {
@@ -49,91 +48,52 @@
     }
   },
   "tech_stack": {
-    "language": "python",
-    "http_clients": "requests",
-    "html_extraction": "custom regex-based extractor",
+    "backend": "Django 4.2+, Django REST Framework",
+    "database": "PostgreSQL (Production), SQLite (Local Dev)",
+    "cache": "Redis",
+    "workers": "Celery, Celery Beat",
     "llm_client": "ollama (primary) / openai (fallback)",
     "email": "AWS SQS + SMTP (Gmail)",
-    "scheduler": "cron",
-    "queue": "AWS SQS",
-    "cache": "JSON file-based article tracking (separate per email type)",
-    "dependencies": ["requests", "beautifulsoup4", "pyyaml", "pytest", "feedparser", "python-dateutil", "boto3"]
+    "dependencies": ["Django", "djangorestframework", "celery", "redis", "psycopg2-binary", "requests", "boto3"]
   },
   "security_considerations": [
-    "API keys and SMTP credentials stored in environment variables",
-    "HTML content sanitized during extraction",
-    "Rate-limited external requests",
-    "Respects source terms of service and robots.txt"
+    "Email as primary identifier with CustomUser model",
+    "2FA (TOTP) support implemented in models",
+    "Secure password management and JWT for API access",
+    "Dockerised environment with separate db and redis services"
   ],
   "development_state": {
-    "scaffold": "completed",
-    "implementation": "completed",
-    "testing": "completed",
-    "deployment": "production",
-    "notes": "Fully operational dual-email system with separate tracking and scheduling"
+    "core_engine": "completed",
+    "web_interface": "in_progress",
+    "authentication": "completed",
+    "admin_tools": "completed",
+    "next_steps": "Expand frontend and implement full newsletter CRUD API"
   },
   "architecture": {
-    "overview": "Dual Pipeline: Config Selection → Fetcher → Tracker → Extractor → Summarizer → Selector → Composer → SQS Queue → SMTP Sender",
+    "overview": "Composite Architecture: AI Pipeline (CLI/Worker) + Web Control Panel (Django)",
     "components": {
-      "config": { "description": "Dual configuration system for different email types", "implementation": "config.py + config_models.py", "files": ["config.py", "config_models.py"], "status": "completed" },
-      "fetcher": { "description": "Fetch articles from RSS feeds and local search", "implementation": "feedparser + requests", "files": ["fetchers.py"], "status": "completed" },
-      "tracker": { "description": "Track sent articles and prevent duplicates per email type", "implementation": "JSON file-based cache with separate files", "files": ["tracker.py"], "status": "completed" },
-      "extractor": { "description": "Extract clean article text from HTML", "implementation": "custom regex-based cleaner", "files": ["extractor.py"], "status": "completed" },
-      "summarizer": { "description": "Call LLM to summarise articles", "implementation": "ollama + openai fallback", "files": ["summarizer.py"], "status": "completed" },
-      "selector": { "description": "Dedupe, score and select top items with source diversity", "implementation": "round-robin source selection", "files": ["selector.py"], "status": "completed" },
-      "composer": { "description": "Compose HTML email", "implementation": "template-based HTML generation", "files": ["composer.py"], "status": "completed" },
-      "queue": { "description": "AWS SQS message queue", "implementation": "boto3 SQS client", "files": ["sender.py"], "status": "completed" },
-      "processor": { "description": "Process SQS queue and send emails", "implementation": "SMTP via Gmail", "files": ["process_email_queue.py"], "status": "completed" }
+      "web_panel": { "description": "Django-based admin and user interface", "implementation": "Django + DRF", "files": ["web/"], "status": "active" },
+      "accounts": { "description": "Custom user management and auth", "implementation": "AbstractUser + CustomUserManager", "files": ["web/accounts/"], "status": "completed" },
+      "newsletters": { "description": "Newsletter and subscriber management", "implementation": "Django Models + Admin customizations", "files": ["web/newsletters/"], "status": "in_progress" },
+      "ai_pipeline": { "description": "Legacy/Core article processing engine", "implementation": "Python scripts", "files": ["src/aimailer/"], "status": "completed" }
     }
   },
   "infrastructure": {
-    "type": "cron jobs + AWS SQS",
-    "schedule": {
-      "ai_tooling": "0 12 * * * (Daily 12 PM)",
-      "ai_models": "0 15 * * * (Daily 3 PM)",
-      "processing": "*/15 * * * * (every 15 minutes)",
-      "log_rotation": "0 2 * * 0 (Sundays 2 AM)"
-    },
+    "deployment": "Docker Compose",
+    "services": ["web", "db", "redis", "worker", "beat"],
     "aws_resources": {
       "sqs_queue": "https://sqs.us-east-1.amazonaws.com/900211028177/aimailer-email-queue"
-    },
-    "files": ["run_aimailer.sh", "run_models.sh", "run_processor.sh", "process_email_queue.py", "manage_cache.py", "rotate_logs.sh"]
+    }
   },
   "current_capabilities": [
+    "Robust administrative access via `reset_admin` management command",
+    "User-friendly Newsletter admin with tooltips and simplified keyword entry",
+    "Email-based superuser login with staff/superuser flag management",
     "Automated dual daily email generation and delivery",
-    "Multi-source RSS feed processing (8 total sources across both emails)",
-    "AI-powered article summarization via Ollama",
-    "Source diversity algorithm ensuring balanced content",
-    "Clean text extraction filtering code/JSON noise",
-    "Reliable email delivery via AWS SQS + SMTP",
-    "Separate duplicate prevention tracking for each email type",
-    "Multiple recipient support with individual delivery",
-    "Comprehensive error handling and logging",
-    "Production-ready scheduling and monitoring",
-    "Automatic log rotation and maintenance"
+    "Multi-source RSS feed processing and AI summarization"
   ],
-  "production_metrics": {
-    "email_types": 2,
-    "sources_active": 8,
-    "articles_processed_per_day": "200+",
-    "articles_selected_per_day": 22,
-    "delivery_reliability": "99%+ (SQS + retry logic)",
-    "processing_time": "~5 minutes per email generation",
-    "duplicate_prevention": "30-day article tracking per email type",
-    "recipients_supported": "multiple (currently 2)"
-  },
-  "contact": { "owner": "stephen.z.phillips@sparktsl.com" },
-  "lastUpdated": "2025-11-26T16:55:00Z",
-  "progress_percent": 100,
-  "progress_state": "production",
-  "deployment_status": "live",
-  "next_execution": {
-    "ai_tooling": "Daily at 12:00 PM",
-    "ai_models": "Daily at 3:00 PM"
-  },
-  "cache_management": {
-    "files": ["sent_articles.json", "sent_articles_models.json"],
-    "retention": "30 days per email type",
-    "utilities": ["manage_cache.py show", "manage_cache.py clear"]
-  }
+  "lastUpdated": "2026-01-26T18:00:00Z",
+  "progress_percent": 85,
+  "progress_state": "in_development",
+  "deployment_status": "partially_live"
 }
