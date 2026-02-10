@@ -24,21 +24,40 @@ def similar(a: str, b: str) -> float:
 def dedupe(items: List[Dict]) -> List[Dict]:
     out: List[Dict] = []
     seen_urls = set()
+    matcher = SequenceMatcher(isjunk=None)
+
+    # Check only recent items for similarity to improve performance.
+    # Duplicates are usually close in the feed or input list.
+    MAX_LOOKBACK = 100
+
     for it in items:
         url = (it.get('url') or '').split('?')[0]
         if url and url in seen_urls:
             continue
+
+        it_title = it.get('title', '') or ''
+        matcher.set_seq2(it_title)
+
         dup = False
-        for e in out:
-            eu = (e.get('url') or '').split('?')[0]
-            if url and eu and eu == url:
-                dup = True
-                break
-            if similar(e.get('title',''), it.get('title','')) > 0.88:
-                dup = True
-                break
+
+        # Check against recent items in out (reverse order)
+        limit = len(out)
+        start = max(0, limit - MAX_LOOKBACK)
+
+        for i in range(limit - 1, start - 1, -1):
+            e = out[i]
+            e_title = e.get('title', '') or ''
+            matcher.set_seq1(e_title)
+
+            # Fast guards
+            if matcher.real_quick_ratio() > 0.88 and matcher.quick_ratio() > 0.88:
+                if matcher.ratio() > 0.88:
+                    dup = True
+                    break
+
         if dup:
             continue
+
         if url:
             seen_urls.add(url)
         out.append(it)
