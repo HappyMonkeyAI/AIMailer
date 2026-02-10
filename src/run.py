@@ -22,13 +22,10 @@ def fetch_sources(fetchers, config):
                 try:
                     rss_items = future.result()
                     print(f'Fetched {len(rss_items)} items from {url}')
-                    results.append(rss_items)
+                    results.extend(rss_items)
                 except Exception as exc:
                     print(f'{url} generated an exception: {exc}')
-            
-            # Extend items after all futures complete to avoid race conditions
-            for rss_items in results:
-                items.extend(rss_items)
+            items.extend(results)
     
     # Query local search endpoints if configured
     perplexica = os.environ.get('PERPLEXICA_URL', 'http://192.168.1.2:3030/discover')
