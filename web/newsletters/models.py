@@ -266,3 +266,19 @@ class EmailEvent(models.Model):
     
     def __str__(self):
         return f"{self.event_type} - {self.subscriber.email}"
+
+
+class SentArticle(models.Model):
+    """
+    Track sent article URLs to avoid duplicates.
+    """
+    url = models.URLField(unique=True, db_index=True, max_length=2000)
+    sent_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-sent_at']
+        verbose_name = 'Sent Article'
+        verbose_name_plural = 'Sent Articles'
+
+    def __str__(self):
+        return self.url
