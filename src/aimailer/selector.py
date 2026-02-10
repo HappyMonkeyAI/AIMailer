@@ -24,24 +24,58 @@ def similar(a: str, b: str) -> float:
 def dedupe(items: List[Dict]) -> List[Dict]:
     out: List[Dict] = []
     seen_urls = set()
+    matcher = SequenceMatcher(isjunk=None)
+    
+    # Pre-compute word sets for accepted items to allow fast pruning
+    accepted_word_sets: List[set] = []
+
+    def get_word_set(text: str) -> set:
+        return set(text.lower().split())
+
     for it in items:
         url = (it.get('url') or '').split('?')[0]
         if url and url in seen_urls:
             continue
+
+        it_title = it.get('title', '') or ''
+        it_words = get_word_set(it_title)
+        
+        # SequenceMatcher: set_seq2 is expensive (indexing), do it once per new item
+        matcher.set_seq2(it_title)
+
         dup = False
-        for e in out:
-            eu = (e.get('url') or '').split('?')[0]
-            if url and eu and eu == url:
-                dup = True
-                break
-            if similar(e.get('title',''), it.get('title','')) > 0.88:
-                dup = True
-                break
+
+        # Compare against ALL accepted items (fixed correctness regression)
+        for i in range(len(out) - 1, -1, -1):
+            e_title = out[i].get('title', '') or ''
+            e_words = accepted_word_sets[i]
+            
+            # Fast pruning: skip if word sets are too different
+            if not it_words or not e_words:
+                if it_title == e_title:
+                    dup = True
+                    break
+                continue
+                
+            intersection = len(it_words.intersection(e_words))
+            # If less than 40% of words overlap, they are unlikely to be duplicates
+            if intersection / max(len(it_words), len(e_words)) < 0.4:
+                continue
+
+            matcher.set_seq1(e_title)
+            # Fast guards
+            if matcher.real_quick_ratio() > 0.88 and matcher.quick_ratio() > 0.88:
+                if matcher.ratio() > 0.88:
+                    dup = True
+                    break
+
         if dup:
             continue
+
         if url:
             seen_urls.add(url)
         out.append(it)
+        accepted_word_sets.append(it_words)
     return out
 
 
