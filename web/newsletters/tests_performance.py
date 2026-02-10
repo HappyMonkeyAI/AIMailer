@@ -50,7 +50,7 @@ class RSSSourceAdminPerformanceTest(TestCase):
         # If N=10, and we assert < 10, it should fail if N+1 is present (10+ queries).
         # We'll assert < 8 to be safe and clear.
         with CaptureQueriesContext(connection) as captured:
-             response = self.client.get(url)
+            response = self.client.get(url)
 
         query_count = len(captured)
         # print(f"\nActual queries executed: {query_count}")
