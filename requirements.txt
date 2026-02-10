@@ -1,3 +1,4 @@
+# Core
 requests
 beautifulsoup4
 pyyaml
@@ -7,3 +8,9 @@ python-dateutil
 boto3
 python-dotenv
 bleach
+
+# Django Integration (for tracker)
+Django>=4.2,<5.0
+psycopg2-binary>=2.9.9
+django-filter>=23.5
+django-celery-beat>=2.5.0
