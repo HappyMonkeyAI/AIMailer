@@ -14,6 +14,7 @@ django.setup()
 
 from newsletters.models import SentArticle
 from aimailer import tracker
+from django.utils import timezone
 import importlib
 importlib.reload(tracker)
 
@@ -47,7 +48,7 @@ def test_tracker_db_integration():
     # 4. Test cleanup
     # Manually create an old article
     old_url = 'http://example.com/old'
-    old_date = datetime.now() - timedelta(days=40)
+    old_date = timezone.now() - timedelta(days=40)
     SentArticle.objects.create(url=old_url)
     SentArticle.objects.filter(url=old_url).update(sent_at=old_date)
 

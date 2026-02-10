@@ -16,6 +16,7 @@ django.setup()
 
 from newsletters.models import SentArticle
 from aimailer import tracker
+from django.utils import timezone
 
 @pytest.mark.django_db
 def test_migration_from_file_to_db():
@@ -28,7 +29,7 @@ def test_migration_from_file_to_db():
     SentArticle.objects.all().delete()
 
     data = {}
-    now = datetime.now()
+    now = timezone.now()
     url1 = 'http://example.com/migrated1'
     url2 = 'http://example.com/migrated2'
     url_old = 'http://example.com/old'

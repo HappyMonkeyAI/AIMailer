@@ -1,15 +1,15 @@
 import os
 import json
 import logging
+import threading
 from datetime import datetime, timedelta
 from typing import List, Dict, Set
 
-import threading
-
-# Try to import Django models and timezone
+# Try to import Django models
 try:
     from newsletters.models import SentArticle
     from django.utils import timezone
+    from django.conf import settings
     HAS_DJANGO = True
 except ImportError:
     HAS_DJANGO = False
@@ -23,12 +23,14 @@ _MIGRATION_LOCK = threading.Lock()
 
 def migrate_from_file_to_db(cache_file: str = None) -> None:
     """Populate DB from file if DB is empty."""
-    global _MIGRATION_DONE, HAS_DJANGO
-    if not HAS_DJANGO or _MIGRATION_DONE:
+    global _MIGRATION_DONE
+    if _MIGRATION_DONE:
+        return
+
+    if not HAS_DJANGO:
         return
 
     with _MIGRATION_LOCK:
-        # Re-check after acquiring lock
         if _MIGRATION_DONE:
             return
 
@@ -47,8 +49,7 @@ def migrate_from_file_to_db(cache_file: str = None) -> None:
             try:
                 with open(cache_file, 'r') as f:
                     data = json.load(f)
-            except Exception as e:
-                logger.error(f"Failed to read cache file for migration: {e}")
+            except Exception:
                 _MIGRATION_DONE = True
                 return
 
@@ -65,12 +66,10 @@ def migrate_from_file_to_db(cache_file: str = None) -> None:
                 for url in batch:
                     try:
                         dt = datetime.fromisoformat(cleaned_data[url])
-                        # Handle timezone awareness if enabled in Django
-                        if timezone.is_naive(dt):
+                        if timezone.is_naive(dt) and getattr(settings, 'USE_TZ', False):
                             dt = timezone.make_aware(dt)
                         objs.append(SentArticle(url=url, sent_at=dt))
-                    except Exception as e:
-                        logger.warning(f"Skipping malformed entry {url} during migration: {e}")
+                    except Exception:
                         continue
 
                 SentArticle.objects.bulk_create(objs, ignore_conflicts=True)
@@ -79,17 +78,28 @@ def migrate_from_file_to_db(cache_file: str = None) -> None:
             logger.info(f"Migrated {count} entries from file cache to database.")
             _MIGRATION_DONE = True
         except Exception as e:
-            logger.error(f"Migration failed critically: {e}. Falling back to file-based tracker.")
-            HAS_DJANGO = False # Disable Django tracker for current session
+            logger.error(f"Migration failed: {e}")
 
 
 def _clean_old_entries_file(data: Dict[str, str], days: int = CACHE_DAYS) -> Dict[str, str]:
     """Remove entries older than the specified number of days (File version)."""
-    cutoff = datetime.now() - timedelta(days=days)
+    if HAS_DJANGO:
+        cutoff = timezone.now() - timedelta(days=days)
+    else:
+        cutoff = datetime.now() - timedelta(days=days)
+
     cleaned_data = {}
     for url, date_str in data.items():
         try:
             sent_date = datetime.fromisoformat(date_str)
+
+            # Handle timezone awareness mismatch
+            if HAS_DJANGO:
+                if timezone.is_naive(sent_date):
+                    sent_date = timezone.make_aware(sent_date)
+            elif sent_date.tzinfo is not None:
+                sent_date = sent_date.replace(tzinfo=None)
+
             if sent_date > cutoff:
                 cleaned_data[url] = date_str
         except Exception:
@@ -128,9 +138,13 @@ def save_sent_articles(sent_urls: Set[str], cache_file: str = None) -> None:
     if HAS_DJANGO:
         try:
             migrate_from_file_to_db(cache_file)
-            # Create new entries using bulk_create for performance
-            objs = [SentArticle(url=url) for url in sent_urls]
-            SentArticle.objects.bulk_create(objs, ignore_conflicts=True)
+            # Create new entries
+            new_objs = []
+            for url in sent_urls:
+                new_objs.append(SentArticle(url=url))
+
+            if new_objs:
+                SentArticle.objects.bulk_create(new_objs, ignore_conflicts=True)
 
             # Clean old entries
             cutoff = timezone.now() - timedelta(days=CACHE_DAYS)
