@@ -1,10 +1,17 @@
 import argparse
 import importlib
 import os
+import sys
+import django
 import concurrent.futures
 from dotenv import load_dotenv
 load_dotenv()
 from typing import List, Dict
+
+# Setup Django environment
+sys.path.append(os.path.join(os.path.dirname(__file__), '../web'))
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+django.setup()
 
 
 def fetch_sources(fetchers, config, feed_cache_file=None):

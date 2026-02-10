@@ -8,11 +8,14 @@ class TestTracker(unittest.TestCase):
 
     def setUp(self):
         self.test_cache = 'test_sent_articles.json'
+        self.original_has_django = tracker.HAS_DJANGO
+        tracker.HAS_DJANGO = False  # Force file-based implementation
         # Ensure clean state
         if os.path.exists(self.test_cache):
             os.remove(self.test_cache)
 
     def tearDown(self):
+        tracker.HAS_DJANGO = self.original_has_django
         if os.path.exists(self.test_cache):
             os.remove(self.test_cache)
 
