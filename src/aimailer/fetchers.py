@@ -48,11 +48,11 @@ def fetch_rss(url: str, cache_file: Optional[str] = None) -> List[Dict]:
         if cache and getattr(feed, 'status', 200) == 200:
             new_etag = getattr(feed, 'etag', None)
             new_modified = getattr(feed, 'modified', None)
-             if new_etag or new_modified:
-                 try:
-                     cache.update(url, new_etag, new_modified)
-                 except Exception as e:
-                     print(f"Cache save error for {url}: {e}")
+            if new_etag or new_modified:
+                try:
+                    cache.update(url, new_etag, new_modified)
+                except Exception as e:
+                    print(f"Cache save error for {url}: {e}")
 
         items = []
         for entry in feed.entries[:50]:  # Limit to 50 most recent
