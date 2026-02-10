@@ -2,6 +2,7 @@
 Admin configuration for newsletters app.
 """
 from django.contrib import admin
+from django import forms
 from .models import Category, Newsletter, NewsletterConfig, RSSSource, Subscriber, SendHistory, EmailEvent
 
 
@@ -32,11 +33,28 @@ class NewsletterConfigInline(admin.StackedInline):
     can_delete = False
 
 
+class NewsletterAdminForm(forms.ModelForm):
+    """
+    Custom form for Newsletter admin to add help texts.
+    """
+    class Meta:
+        model = Newsletter
+        fields = '__all__'
+        help_texts = {
+            'title': 'The main title of your newsletter as it will appear to subscribers.',
+            'category': 'Select a category to help users discover your newsletter.',
+            'keywords': 'Enter keywords relevant to your newsletter content, separated by commas.',
+            'status': 'Draft: Not visible. Active: Publishing. Paused: Temporarily stopped.',
+            'visibility': 'Public: Visible to everyone. Private: Invitation only.',
+        }
+
+
 @admin.register(Newsletter)
 class NewsletterAdmin(admin.ModelAdmin):
     """
     Newsletter admin interface.
     """
+    form = NewsletterAdminForm
     list_display = ['title', 'owner', 'category', 'status', 'visibility', 'subscriber_count', 'created_at']
     list_filter = ['status', 'visibility', 'category', 'created_at']
     search_fields = ['title', 'short_description', 'owner__email']
