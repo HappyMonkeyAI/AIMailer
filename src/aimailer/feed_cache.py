@@ -12,8 +12,8 @@ class FeedCache:
             try:
                 with open(self.cache_file, 'r') as f:
                     return json.load(f)
-            except Exception:
-                pass
+            except (json.JSONDecodeError, OSError) as e:
+                print(f"Failed to load cache from {self.cache_file}: {e}")
         return {}
 
     def get(self, url: str) -> Tuple[Optional[str], Optional[str]]:
@@ -29,7 +29,13 @@ class FeedCache:
 
     def _save_cache(self):
         try:
-            with open(self.cache_file, 'w') as f:
+            # Ensure directory exists
+            os.makedirs(os.path.dirname(self.cache_file), exist_ok=True)
+            
+            # Atomic write to prevent corruption during concurrent access
+            tmp_file = f"{self.cache_file}.tmp"
+            with open(tmp_file, 'w') as f:
                 json.dump(self.data, f, indent=2)
-        except Exception:
-            pass
+            os.replace(tmp_file, self.cache_file)
+        except OSError as e:
+            print(f"Failed to save cache to {self.cache_file}: {e}")

@@ -46,8 +46,8 @@ def fetch_rss(url: str, cache_file: Optional[str] = None) -> List[Dict]:
 
         # Update cache on success
         if cache and getattr(feed, 'status', 200) == 200:
-             new_etag = getattr(feed, 'etag', None)
-             new_modified = getattr(feed, 'modified', None)
+            new_etag = getattr(feed, 'etag', None)
+            new_modified = getattr(feed, 'modified', None)
              if new_etag or new_modified:
                  try:
                      cache.update(url, new_etag, new_modified)
