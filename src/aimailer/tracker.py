@@ -4,9 +4,12 @@ import logging
 from datetime import datetime, timedelta
 from typing import List, Dict, Set
 
-# Try to import Django models
+import threading
+
+# Try to import Django models and timezone
 try:
     from newsletters.models import SentArticle
+    from django.utils import timezone
     HAS_DJANGO = True
 except ImportError:
     HAS_DJANGO = False
@@ -16,62 +19,68 @@ CACHE_DAYS = 30  # Keep track for 30 days
 logger = logging.getLogger(__name__)
 
 _MIGRATION_DONE = False
+_MIGRATION_LOCK = threading.Lock()
 
 def migrate_from_file_to_db(cache_file: str = None) -> None:
     """Populate DB from file if DB is empty."""
-    global _MIGRATION_DONE
-    if _MIGRATION_DONE:
+    global _MIGRATION_DONE, HAS_DJANGO
+    if not HAS_DJANGO or _MIGRATION_DONE:
         return
 
-    if not HAS_DJANGO:
-        return
-
-    try:
-        # Check if DB is empty (efficient check)
-        if SentArticle.objects.exists():
-            _MIGRATION_DONE = True
-            return
-
-        logger.info("Database sent_articles empty, checking for file cache to migrate...")
-        cache_file = cache_file or DEFAULT_CACHE_FILE
-        if not os.path.exists(cache_file):
-            _MIGRATION_DONE = True
+    with _MIGRATION_LOCK:
+        # Re-check after acquiring lock
+        if _MIGRATION_DONE:
             return
 
         try:
-            with open(cache_file, 'r') as f:
-                data = json.load(f)
-        except Exception:
+            # Check if DB is empty (efficient check)
+            if SentArticle.objects.exists():
+                _MIGRATION_DONE = True
+                return
+
+            logger.info("Database sent_articles empty, checking for file cache to migrate...")
+            cache_file = cache_file or DEFAULT_CACHE_FILE
+            if not os.path.exists(cache_file):
+                _MIGRATION_DONE = True
+                return
+
+            try:
+                with open(cache_file, 'r') as f:
+                    data = json.load(f)
+            except Exception as e:
+                logger.error(f"Failed to read cache file for migration: {e}")
+                _MIGRATION_DONE = True
+                return
+
+            # Clean old entries
+            cleaned_data = _clean_old_entries_file(data)
+
+            # Insert into DB
+            count = 0
+            batch_size = 1000
+            urls = list(cleaned_data.keys())
+            for i in range(0, len(urls), batch_size):
+                batch = urls[i:i+batch_size]
+                objs = []
+                for url in batch:
+                    try:
+                        dt = datetime.fromisoformat(cleaned_data[url])
+                        # Handle timezone awareness if enabled in Django
+                        if timezone.is_naive(dt):
+                            dt = timezone.make_aware(dt)
+                        objs.append(SentArticle(url=url, sent_at=dt))
+                    except Exception as e:
+                        logger.warning(f"Skipping malformed entry {url} during migration: {e}")
+                        continue
+
+                SentArticle.objects.bulk_create(objs, ignore_conflicts=True)
+                count += len(objs)
+
+            logger.info(f"Migrated {count} entries from file cache to database.")
             _MIGRATION_DONE = True
-            return
-
-        # Clean old entries
-        cleaned_data = _clean_old_entries_file(data)
-
-        # Insert into DB
-        count = 0
-        batch_size = 1000
-        urls = list(cleaned_data.keys())
-        for i in range(0, len(urls), batch_size):
-            batch = urls[i:i+batch_size]
-            objs = []
-            for url in batch:
-                try:
-                    dt = datetime.fromisoformat(cleaned_data[url])
-                    # Make naive datetime aware if needed, but Django handles naive usually as local time
-                    # or fails if timezone support is on.
-                    # Best to assume naive is okay or use timezone.make_aware if settings.USE_TZ
-                    objs.append(SentArticle(url=url, sent_at=dt))
-                except Exception:
-                    continue
-
-            SentArticle.objects.bulk_create(objs, ignore_conflicts=True)
-            count += len(objs)
-
-        logger.info(f"Migrated {count} entries from file cache to database.")
-        _MIGRATION_DONE = True
-    except Exception as e:
-        logger.error(f"Migration failed: {e}")
+        except Exception as e:
+            logger.error(f"Migration failed critically: {e}. Falling back to file-based tracker.")
+            HAS_DJANGO = False # Disable Django tracker for current session
 
 
 def _clean_old_entries_file(data: Dict[str, str], days: int = CACHE_DAYS) -> Dict[str, str]:
@@ -119,13 +128,12 @@ def save_sent_articles(sent_urls: Set[str], cache_file: str = None) -> None:
     if HAS_DJANGO:
         try:
             migrate_from_file_to_db(cache_file)
-            # Create new entries
-            for url in sent_urls:
-                # Use get_or_create to avoid duplicates
-                SentArticle.objects.get_or_create(url=url)
+            # Create new entries using bulk_create for performance
+            objs = [SentArticle(url=url) for url in sent_urls]
+            SentArticle.objects.bulk_create(objs, ignore_conflicts=True)
 
             # Clean old entries
-            cutoff = datetime.now() - timedelta(days=CACHE_DAYS)
+            cutoff = timezone.now() - timedelta(days=CACHE_DAYS)
             SentArticle.objects.filter(sent_at__lt=cutoff).delete()
             return
         except Exception as e:

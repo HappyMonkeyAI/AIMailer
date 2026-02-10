@@ -9,9 +9,12 @@ load_dotenv()
 from typing import List, Dict
 
 # Setup Django environment
-sys.path.append(os.path.join(os.path.dirname(__file__), '../web'))
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
-django.setup()
+try:
+    sys.path.append(os.path.join(os.path.dirname(__file__), '../web'))
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+    django.setup()
+except Exception as e:
+    print(f"Warning: Django setup failed: {e}. Falling back to file-based tracker.")
 
 
 def fetch_sources(fetchers, config):
