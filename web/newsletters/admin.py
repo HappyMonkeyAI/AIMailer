@@ -77,6 +77,7 @@ class RSSSourceAdmin(admin.ModelAdmin):
     list_display = ['name', 'newsletter', 'url', 'is_active', 'priority', 'last_fetched']
     list_filter = ['is_active', 'newsletter']
     search_fields = ['name', 'url', 'newsletter__title']
+    list_select_related = ['newsletter']
 
 
 @admin.register(Subscriber)
