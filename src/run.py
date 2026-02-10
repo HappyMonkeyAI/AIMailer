@@ -7,25 +7,13 @@ load_dotenv()
 from typing import List, Dict
 
 
-def fetch_sources(fetchers, config):
+def fetch_sources(fetchers, config, feed_cache_file=None):
     items = []
     # Fetch RSS feeds from configured sources
-    sources = getattr(config, 'DEFAULT_SOURCES', [])
-    if sources:
-        # Use ThreadPoolExecutor to fetch RSS feeds in parallel
-        max_workers = min(10, len(sources))
-        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-            future_to_url = {executor.submit(fetchers.fetch_rss, url): url for url in sources}
-            results = []
-            for future in concurrent.futures.as_completed(future_to_url):
-                url = future_to_url[future]
-                try:
-                    rss_items = future.result()
-                    print(f'Fetched {len(rss_items)} items from {url}')
-                    results.extend(rss_items)
-                except Exception as exc:
-                    print(f'{url} generated an exception: {exc}')
-            items.extend(results)
+    for url in getattr(config, 'DEFAULT_SOURCES', []):
+        rss_items = fetchers.fetch_rss(url, cache_file=feed_cache_file)
+        print(f'Fetched {len(rss_items)} items from {url}')
+        items.extend(rss_items)
     
     # Query local search endpoints if configured
     perplexica = os.environ.get('PERPLEXICA_URL', 'http://192.168.1.2:3030/discover')
@@ -92,11 +80,22 @@ def main(dry_run=False, max_items=12, config_name='config'):
     config = importlib.import_module(f'aimailer.{config_name}')
 
     print(f'Running AIMailer pipeline (config={config_name}, dry_run={dry_run})')
-    raw_items = fetch_sources(fetchers, config)
-    print('Fetched', len(raw_items), 'seed items')
-    
+
     # Filter out previously sent articles using config-specific cache
     cache_file = getattr(config, 'CACHE_FILE', None)
+
+    # Derive feed cache path from sent articles cache path
+    feed_cache_file = None
+    if cache_file:
+        try:
+            from pathlib import Path
+            feed_cache_file = str(Path(cache_file).parent / 'feed_metadata.json')
+        except Exception:
+            pass
+
+    raw_items = fetch_sources(fetchers, config, feed_cache_file=feed_cache_file)
+    print('Fetched', len(raw_items), 'seed items')
+
     new_items = tracker.filter_new_articles(raw_items, cache_file)
     print('Filtered to', len(new_items), 'new articles (removed', len(raw_items) - len(new_items), 'duplicates)')
     
