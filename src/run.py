@@ -10,10 +10,20 @@ from typing import List, Dict
 def fetch_sources(fetchers, config):
     items = []
     # Fetch RSS feeds from configured sources
-    for url in getattr(config, 'DEFAULT_SOURCES', []):
-        rss_items = fetchers.fetch_rss(url)
-        print(f'Fetched {len(rss_items)} items from {url}')
-        items.extend(rss_items)
+    sources = getattr(config, 'DEFAULT_SOURCES', [])
+    if sources:
+        # Use ThreadPoolExecutor to fetch RSS feeds in parallel
+        max_workers = min(10, len(sources))
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_url = {executor.submit(fetchers.fetch_rss, url): url for url in sources}
+            for future in concurrent.futures.as_completed(future_to_url):
+                url = future_to_url[future]
+                try:
+                    rss_items = future.result()
+                    print(f'Fetched {len(rss_items)} items from {url}')
+                    items.extend(rss_items)
+                except Exception as exc:
+                    print(f'{url} generated an exception: {exc}')
     
     # Query local search endpoints if configured
     perplexica = os.environ.get('PERPLEXICA_URL', 'http://192.168.1.2:3030/discover')
