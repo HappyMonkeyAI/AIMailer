@@ -269,3 +269,48 @@ Proprietary - Internal use only
 ---
 
 **Status**: ✅ Production Ready | **Next Emails**: Daily at 12:00 PM & 3:00 PM | **Cache**: 30-day duplicate prevention per email type
+
+## 🌐 Web Admin for Newsletter Management
+
+AIMailer includes a Django-based web admin interface for managing newsletters, users, and content. This is the recommended way to manage recipients, view sent articles, and configure newsletter settings.
+
+### Accessing the Web Admin
+
+- **Production URL:** https://aimailer.happymonkey.ai/admin
+- **Local Development:** http://localhost:8001/admin
+
+### First-Time Setup
+
+1. **Start all services:**
+   ```bash
+   docker compose up -d --build
+   ```
+2. **Create a superuser:**
+   ```bash
+   docker compose exec web python manage.py createsuperuser
+   ```
+3. **Login:**
+   - Visit the admin URL above and log in with your superuser credentials.
+
+### Required Environment Variables
+
+Ensure these are set in your `docker-compose.yml` or `.env`:
+- `ALLOWED_HOSTS=aimailer.happymonkey.ai,localhost,127.0.0.1`
+- `CSRF_TRUSTED_ORIGINS=https://aimailer.happymonkey.ai`
+
+### Static Files
+
+Static files are automatically collected to `web/staticfiles/` and served by nginx. If you see missing CSS/JS, ensure nginx is configured to serve `/static/` from this directory.
+
+### Troubleshooting
+- **403 CSRF Errors:** Make sure `CSRF_TRUSTED_ORIGINS` includes your domain (with `https://`).
+- **400 Bad Request:** Add your domain to `ALLOWED_HOSTS`.
+- **Static Files 404:** Confirm nginx serves `/static/` from `web/staticfiles/`.
+
+### Features in the Admin
+- Manage newsletter recipients and user accounts
+- View and edit sent articles
+- Configure newsletter settings
+- Monitor logs and system status
+
+---
