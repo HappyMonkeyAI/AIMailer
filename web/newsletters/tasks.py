@@ -93,8 +93,8 @@ def process_newsletter(self, newsletter_id):
                 logger.warning(f"Error fetching {url}: {e}")
 
         # Query local search endpoints if configured
-        perplexica = os.environ.get('PERPLEXICA_URL', 'http://192.168.1.2:3030/discover')
-        searx = os.environ.get('SEARXNG_URL', 'http://192.168.1.2:4040')
+        perplexica = os.environ.get('PERPLEXICA_URL', 'http://localhost:3030/discover')
+        searx = os.environ.get('SEARXNG_URL', 'http://localhost:4040')
         keywords = conf.KEYWORDS
         q = ' '.join(keywords[:5]) if keywords else 'ai'
 
