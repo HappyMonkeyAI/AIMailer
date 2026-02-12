@@ -14,7 +14,12 @@ try:
 except ImportError:
     HAS_DJANGO = False
 
-DEFAULT_CACHE_FILE = '/var/www/html/happymonkey.ai/AIMailer/sent_articles.json'
+DEFAULT_CACHE_FILE = os.environ.get('AIMAILER_CACHE_FILE', 'sent_articles.json')
+if HAS_DJANGO and settings.configured and hasattr(settings, 'BASE_DIR'):
+    # Default to project root if in Django context and env var not set
+    if 'AIMAILER_CACHE_FILE' not in os.environ:
+         DEFAULT_CACHE_FILE = str(settings.BASE_DIR.parent / 'sent_articles.json')
+
 CACHE_DAYS = 30  # Keep track for 30 days
 logger = logging.getLogger(__name__)
 
