@@ -1,5 +1,5 @@
 #!/bin/bash
-cd /var/www/html/happymonkey.ai/AIMailer
+cd /var/www/html/AIMailer
 source venv/bin/activate
 
 # Load environment variables from .env file

@@ -14,7 +14,7 @@ try:
 except ImportError:
     HAS_DJANGO = False
 
-DEFAULT_CACHE_FILE = '/var/www/html/happymonkey.ai/AIMailer/sent_articles.json'
+DEFAULT_CACHE_FILE = '/var/www/html/AIMailer/sent_articles.json'
 CACHE_DAYS = 30  # Keep track for 30 days
 logger = logging.getLogger(__name__)
 
