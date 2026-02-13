@@ -15,13 +15,17 @@ def call_ollama(prompt: str, max_tokens: int = 512) -> str:
             'prompt': prompt,
             'max_tokens': max_tokens,
             'temperature': 0.2,
+            'stream': False,
         }
-        resp = requests.post(url, json=payload, timeout=30)
+        resp = requests.post(url, json=payload, timeout=120)
         resp.raise_for_status()
         data = resp.json()
         # Ollama responses vary; try to extract common fields
         if isinstance(data, dict) and 'text' in data:
             return data['text']
+        # Ollama standard field
+        if isinstance(data, dict) and 'response' in data:
+            return data['response']
         # Some Ollama setups stream or return 'completion'
         if isinstance(data, dict) and 'completion' in data:
             return data['completion']
@@ -49,14 +53,18 @@ def summarize_text(text: str) -> Dict:
         # Try to parse JSON from model
         try:
             import json
-            obj = json.loads(ollama_out)
+            # Heuristic: find the first '{' and last '}' to extract JSON block
+            import re
+            match = re.search(r'\{.*\}', ollama_out, re.DOTALL)
+            if match:
+                json_str = match.group(0)
+                obj = json.loads(json_str)
+            else:
+                obj = json.loads(ollama_out)
+            
             return {'summary': obj.get('summary',''), 'why_dev_care': obj.get('why',''), 'tags': [t.strip() for t in obj.get('tags','').split(',') if t.strip()], 'confidence': 0.9}
-        except json.JSONDecodeError:
-            # If not JSON, heuristic split: take first paragraph as summary
-            summary = ollama_out.strip().split('\n\n')[0][:600]
-            return {'summary': summary, 'why_dev_care': '', 'tags': [], 'confidence': 0.7}
         except Exception:
-             # Fallback for other parsing errors
+            # If not JSON or fails parsing, heuristic fallback
             summary = ollama_out.strip().split('\n\n')[0][:600]
             return {'summary': summary, 'why_dev_care': '', 'tags': [], 'confidence': 0.7}
 

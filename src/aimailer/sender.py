@@ -31,8 +31,12 @@ def send_email(subject: str, html_body: str, recipients: Union[str, List[str]], 
         raise RuntimeError('SMTP_HOST not configured')
 
     try:
-        server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
-        server.starttls()
+        if SMTP_PORT == 465:
+            server = smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT)
+        else:
+            server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
+            server.starttls()
+            
         if SMTP_USER and SMTP_PASS:
             server.login(SMTP_USER, SMTP_PASS)
 

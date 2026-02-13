@@ -22,8 +22,11 @@ services:
     command: python manage.py runserver 0.0.0.0:8001
     volumes:
       - ./web:/app/web
+      - ./src:/app/src
     ports:
       - "8001:8001"
+    env_file:
+      - .env
     environment:
       - DEBUG=True
       - SECRET_KEY=django-insecure-docker-dev-key
@@ -49,6 +52,9 @@ services:
     command: celery -A config worker -l info
     volumes:
       - ./web:/app/web
+      - ./src:/app/src
+    env_file:
+      - .env
     environment:
       - DEBUG=True
       - SECRET_KEY=django-insecure-docker-dev-key
@@ -72,6 +78,9 @@ services:
     command: celery -A config beat -l info
     volumes:
       - ./web:/app/web
+      - ./src:/app/src
+    env_file:
+      - .env
     environment:
       - DEBUG=True
       - SECRET_KEY=django-insecure-docker-dev-key
