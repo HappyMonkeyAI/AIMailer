@@ -58,6 +58,20 @@ def process_newsletter(self, newsletter_id):
         logger.error("AIMailer modules not found. Cannot process newsletter.")
         return
 
+    # Implementation of a distributed lock using Redis to prevent concurrent executions
+    from django.core.cache import cache
+    lock_id = f"newsletter_lock_{newsletter_id}"
+    # acquire_lock = cache.add(lock_id, "true", 3600*4) # Lock for 4 hours
+    # if not acquire_lock:
+    #     logger.warning(f"Newsletter {newsletter_id} is already being processed by another worker. Skipping.")
+    #     return
+
+    # Use a context manager for more robust locking if available, 
+    # but cache.add is the standard way to implement a simple lock in Django.
+    if not cache.add(lock_id, self.request.id, 3600*4):
+        logger.warning(f"Newsletter {newsletter_id} is already being processed. Skipping task {self.request.id}")
+        return
+
     try:
         newsletter = Newsletter.objects.get(id=newsletter_id)
         config = newsletter.config
@@ -218,3 +232,7 @@ def process_newsletter(self, newsletter_id):
             celery_task_id=self.request.id or '',
             articles_sent=[]
         )
+    finally:
+        # Always release the lock
+        cache.delete(lock_id)
+        logger.info(f"Released lock for newsletter {newsletter_id}")

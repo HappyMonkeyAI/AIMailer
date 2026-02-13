@@ -182,6 +182,14 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
+# Fix for long-running tasks: increase visibility timeout to 4 hours
+CELERY_BROKER_TRANSPORT_OPTIONS = {
+    'visibility_timeout': 14400,
+}
+# Reliability: acknowledge tasks only after completion
+CELERY_TASK_ACKS_LATE = True
+CELERY_TASK_REJECT_ON_WORKER_LOST = True
+
 # Cache Configuration
 CACHES = {
     'default': {
