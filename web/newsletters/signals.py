@@ -41,7 +41,17 @@ def update_newsletter_task(newsletter):
             logger.warning(f"Invalid cron expression for newsletter {newsletter.id}: {schedule_str}")
             return
 
-        minute, hour, day_of_month, month_of_year, day_of_week = parts
+        # Normalize parts (e.g., '0' to '0')
+        def normalize_part(p):
+            try:
+                # If it's a simple integer, strip leading zeros
+                if p.isdigit():
+                    return str(int(p))
+            except:
+                pass
+            return p
+
+        minute, hour, day_of_month, month_of_year, day_of_week = [normalize_part(p) for p in parts]
 
         schedule, _ = CrontabSchedule.objects.get_or_create(
             minute=minute,
@@ -50,6 +60,11 @@ def update_newsletter_task(newsletter):
             month_of_year=month_of_year,
             day_of_week=day_of_week,
         )
+
+        # Update the config string to match the normalized version
+        normalized_schedule = f"{minute} {hour} {day_of_month} {month_of_year} {day_of_week}"
+        if config.send_schedule != normalized_schedule:
+            NewsletterConfig.objects.filter(id=config.id).update(send_schedule=normalized_schedule)
 
         PeriodicTask.objects.update_or_create(
             name=task_name,
@@ -85,3 +100,26 @@ def newsletter_saved(sender, instance, created, **kwargs):
 def newsletter_deleted(sender, instance, **kwargs):
     task_name = f'process-newsletter-{instance.id}'
     PeriodicTask.objects.filter(name=task_name).delete()
+
+@receiver(post_save, sender=CrontabSchedule)
+def crontab_saved(sender, instance, **kwargs):
+    """
+    When a CrontabSchedule is updated, sync it back to any linked Newsletters.
+    """
+    # Find all newsletter tasks using this schedule
+    tasks = PeriodicTask.objects.filter(
+        crontab=instance,
+        task='newsletters.tasks.process_newsletter'
+    )
+
+    new_schedule = f"{instance.minute} {instance.hour} {instance.day_of_month} {instance.month_of_year} {instance.day_of_week}"
+
+    for task in tasks:
+        try:
+            # Task args is a JSON list [newsletter_id]
+            newsletter_id = json.loads(task.args)[0]
+            # Update the config directly to avoid triggering update_newsletter_task again
+            NewsletterConfig.objects.filter(newsletter_id=newsletter_id).update(send_schedule=new_schedule)
+            logger.info(f"Synced CrontabSchedule change back to Newsletter {newsletter_id}")
+        except Exception as e:
+            logger.error(f"Error syncing CrontabSchedule {instance.id} to task {task.name}: {e}")
