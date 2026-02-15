@@ -90,7 +90,7 @@ class SchedulingTests(TestCase):
         mock_summarizer.summarize_text.return_value = {'summary': 'Summary', 'why_dev_care': 'Why', 'tags': [], 'confidence': 0.9}
         mock_selector.select_top.return_value = [{'url': 'http://example.com/1', 'title': 'Article 1', 'summary': 'Summary', 'why': 'Why', 'tags': [], 'confidence': 0.9}]
         mock_composer.compose_html.return_value = "<html>Email</html>"
-        mock_sender.send_email.return_value = True
+        mock_sender.send_email.return_value = 1  # Return 1 successful send
 
         # Ensure mark_articles_sent does nothing
         mock_tracker.mark_articles_sent.return_value = None

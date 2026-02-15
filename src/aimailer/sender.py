@@ -11,13 +11,13 @@ SMTP_PASS = os.environ.get('SMTP_PASS')
 
 
 def send_email(subject: str, html_body: str, recipients: Union[str, List[str], List[Dict]], dry_run: bool = True,
-               sender_email: str = None, sender_name: str = None) -> bool:
+               sender_email: str = None, sender_name: str = None) -> int:
     """Send HTML email to multiple recipients via SMTP.
 
     Recipients can be a list of strings (emails) or dictionaries ({'email': '...', 'unsubscribe_url': '...'}).
     If a dictionary is provided, '{{ unsubscribe_url }}' in html_body will be replaced.
 
-    If `dry_run` is True, the function only logs the intended action.
+    Returns the number of successfully sent emails.
     """
     print('send_email called; dry_run=', dry_run)
 
@@ -29,7 +29,7 @@ def send_email(subject: str, html_body: str, recipients: Union[str, List[str], L
         count = len(recipients)
         sample = recipients[0] if count > 0 else "none"
         print(f'DRY RUN: would send email to {count} recipients. Sample: {sample}')
-        return True
+        return count
 
     # Require SMTP host and credentials
     if not SMTP_HOST:
@@ -66,17 +66,20 @@ def send_email(subject: str, html_body: str, recipients: Union[str, List[str], L
             if not email_addr:
                 continue
 
-            msg = MIMEText(body, 'html')
-            msg['Subject'] = subject
-            msg['From'] = from_addr
-            msg['To'] = email_addr
+            try:
+                msg = MIMEText(body, 'html')
+                msg['Subject'] = subject
+                msg['From'] = from_addr
+                msg['To'] = email_addr
 
-            server.sendmail(envelope_from, [email_addr], msg.as_string())
-            print(f'SMTP email sent to {email_addr}')
-            success_count += 1
+                server.sendmail(envelope_from, [email_addr], msg.as_string())
+                print(f'SMTP email sent to {email_addr}')
+                success_count += 1
+            except Exception as e:
+                print(f'Failed to send to {email_addr}: {e}')
 
         server.quit()
-        return success_count == len(recipients)
+        return success_count
     except Exception as e:
-        print(f'SMTP failed: {e}')
-        return False
+        print(f'SMTP connection failed: {e}')
+        return 0

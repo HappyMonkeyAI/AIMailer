@@ -207,7 +207,7 @@ def process_newsletter(self, newsletter_id):
             })
 
         # 6. Send Email
-        sent_success = sender.send_email(
+        sent_count = sender.send_email(
             conf.EMAIL_SUBJECT,
             html_email,
             recipients_list,
@@ -217,20 +217,23 @@ def process_newsletter(self, newsletter_id):
         )
 
         # 7. Mark as Sent
-        if sent_success and not dry_run:
+        if (sent_count > 0 or dry_run):
             tracker.mark_articles_sent(top_items, cache_file=None)
 
         # 8. Record History
+        success_count = sent_count if not dry_run else len(recipients_list)
+        failure_count = len(recipients_list) - success_count
+
         SendHistory.objects.create(
             newsletter=newsletter,
             recipient_count=len(recipients_list),
-            success_count=len(recipients_list) if sent_success else 0,
-            failure_count=0 if sent_success else len(recipients_list),
+            success_count=success_count,
+            failure_count=failure_count,
             articles_sent=[item.get('url') for item in top_items],
             celery_task_id=self.request.id or ''
         )
 
-        logger.info(f"Newsletter {newsletter.title} processed. Sent: {sent_success}")
+        logger.info(f"Newsletter {newsletter.title} processed. Sent: {success_count}/{len(recipients_list)}")
 
     except Exception as e:
         logger.error(f"Error in process_newsletter: {e}", exc_info=True)
