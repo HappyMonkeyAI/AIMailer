@@ -5,6 +5,7 @@ import logging
 from pathlib import Path
 from celery import shared_task
 from django.utils import timezone
+from django.conf import settings
 
 # Add src to sys.path to import aimailer modules
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -195,11 +196,21 @@ def process_newsletter(self, newsletter_id):
         # 5. Compose Email
         html_email = composer.compose_html(conf.EMAIL_TITLE, top_items)
 
+        # Build recipient list with unsubscribe URLs
+        site_url = getattr(settings, 'SITE_URL', 'http://localhost:8000').rstrip('/')
+        recipients_list = []
+        for sub in newsletter.subscribers.filter(status='active'):
+            unsub_url = f"{site_url}/newsletter/unsubscribe/{sub.unsubscribe_token}/"
+            recipients_list.append({
+                'email': sub.email,
+                'unsubscribe_url': unsub_url
+            })
+
         # 6. Send Email
         sent_success = sender.send_email(
             conf.EMAIL_SUBJECT,
             html_email,
-            conf.RECIPIENTS,
+            recipients_list,
             dry_run=dry_run,
             sender_email=config.sender_email,
             sender_name=config.sender_name
@@ -212,9 +223,9 @@ def process_newsletter(self, newsletter_id):
         # 8. Record History
         SendHistory.objects.create(
             newsletter=newsletter,
-            recipient_count=len(conf.RECIPIENTS),
-            success_count=len(conf.RECIPIENTS) if sent_success else 0,
-            failure_count=0 if sent_success else len(conf.RECIPIENTS),
+            recipient_count=len(recipients_list),
+            success_count=len(recipients_list) if sent_success else 0,
+            failure_count=0 if sent_success else len(recipients_list),
             articles_sent=[item.get('url') for item in top_items],
             celery_task_id=self.request.id or ''
         )
@@ -224,11 +235,12 @@ def process_newsletter(self, newsletter_id):
     except Exception as e:
         logger.error(f"Error in process_newsletter: {e}", exc_info=True)
         # Create failure history
+        count = len(recipients_list) if 'recipients_list' in locals() else (len(conf.RECIPIENTS) if 'conf' in locals() else 0)
         SendHistory.objects.create(
             newsletter=newsletter,
-            recipient_count=len(conf.RECIPIENTS) if 'conf' in locals() else 0,
+            recipient_count=count,
             success_count=0,
-            failure_count=len(conf.RECIPIENTS) if 'conf' in locals() else 0,
+            failure_count=count,
             celery_task_id=self.request.id or '',
             articles_sent=[]
         )

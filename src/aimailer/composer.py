@@ -10,7 +10,7 @@ def compose_html(title: str, items: List[Dict]) -> str:
         parts.append(f"<p><a href=\"{it.get('url')}\">Read more →</a></p>")
         parts.append("<hr />")
     parts.append('<div style="text-align:center;font-size:12px;color:#9ca3af;margin-top:20px;">')
-    parts.append('<p><a href="mailto:info@happymonkey.ai?subject=request unsubscribe" style="color:#9ca3af;">Unsubscribe</a></p>')
+    parts.append('<p><a href="{{ unsubscribe_url }}" style="color:#9ca3af;">Unsubscribe</a></p>')
     parts.append('</div>')
     parts.append('</div>')
     return '<html><body>' + '\n'.join(parts) + '</body></html>'
