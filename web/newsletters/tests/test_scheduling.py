@@ -1,5 +1,6 @@
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from django_celery_beat.models import PeriodicTask, CrontabSchedule
 from newsletters.models import Newsletter, NewsletterConfig, Category
 from newsletters.tasks import process_newsletter
@@ -7,6 +8,7 @@ from unittest.mock import patch, MagicMock
 
 User = get_user_model()
 
+@override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
 class SchedulingTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(email='testuser@example.com', username='testuser', password='password')
@@ -27,12 +29,15 @@ class SchedulingTests(TestCase):
     def test_periodic_task_creation(self):
         """Test that creating config creates a periodic task."""
         task_name = f'process-newsletter-{self.newsletter.id}'
+        # Periodic tasks are created by signals, assuming Celery Beat is set up
+        # We check if the signal logic works by checking if the task exists
         self.assertTrue(PeriodicTask.objects.filter(name=task_name).exists())
 
         task = PeriodicTask.objects.get(name=task_name)
         self.assertTrue(task.enabled)
         self.assertEqual(task.crontab.minute, '0')
         self.assertEqual(task.crontab.hour, '9')
+        # The args are stored as a JSON string
         self.assertIn(str(self.newsletter.id), task.args)
 
     def test_schedule_update(self):
@@ -83,14 +88,17 @@ class SchedulingTests(TestCase):
         mock_tracker.filter_new_articles.return_value = [{'url': 'http://example.com/1', 'title': 'Article 1'}]
         mock_extractor.extract_text.return_value = "Content"
         mock_summarizer.summarize_text.return_value = {'summary': 'Summary', 'why_dev_care': 'Why', 'tags': [], 'confidence': 0.9}
-        mock_selector.select_top.return_value = [{'url': 'http://example.com/1'}]
+        mock_selector.select_top.return_value = [{'url': 'http://example.com/1', 'title': 'Article 1', 'summary': 'Summary', 'why': 'Why', 'tags': [], 'confidence': 0.9}]
         mock_composer.compose_html.return_value = "<html>Email</html>"
-        mock_sender.send_email.return_value = True
+        mock_sender.send_email.return_value = 1  # Return 1 successful send
+
+        # Ensure mark_articles_sent does nothing
+        mock_tracker.mark_articles_sent.return_value = None
 
         # Add RSS Source and Subscriber
         from newsletters.models import Subscriber, RSSSource
         RSSSource.objects.create(newsletter=self.newsletter, url='http://example.com/rss', is_active=True)
-        Subscriber.objects.create(newsletter=self.newsletter, email='sub@example.com', status='active')
+        sub = Subscriber.objects.create(newsletter=self.newsletter, email='sub@example.com', status='active')
 
         # Run task
         process_newsletter(self.newsletter.id)
@@ -98,7 +106,23 @@ class SchedulingTests(TestCase):
         # Assertions
         mock_fetchers.fetch_rss.assert_called()
         mock_tracker.filter_new_articles.assert_called()
+
+        # Verify send_email arguments
         mock_sender.send_email.assert_called()
+        args, kwargs = mock_sender.send_email.call_args
+
+        # args[0] is subject
+        # args[1] is html
+        # args[2] is recipients list
+
+        self.assertEqual(args[1], "<html>Email</html>")
+        recipients = args[2]
+        self.assertEqual(len(recipients), 1)
+        self.assertEqual(recipients[0]['email'], 'sub@example.com')
+        self.assertIn('unsubscribe_url', recipients[0])
+        self.assertIn('/newsletter/unsubscribe/', recipients[0]['unsubscribe_url'])
+        self.assertIn(str(sub.unsubscribe_token), recipients[0]['unsubscribe_url'])
+
         mock_tracker.mark_articles_sent.assert_called()
 
         # Verify history created

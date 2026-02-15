@@ -2,7 +2,8 @@
 URL configuration for newsletters app.
 """
 from django.urls import path
+from . import views
 
 urlpatterns = [
-    # Will add newsletter endpoints here
+    path('unsubscribe/<uuid:token>/', views.unsubscribe, name='unsubscribe'),
 ]

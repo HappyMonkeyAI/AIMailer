@@ -206,3 +206,6 @@ if not DEBUG:
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
+
+# Site URL for absolute links
+SITE_URL = os.getenv('SITE_URL', 'http://localhost:8000')
