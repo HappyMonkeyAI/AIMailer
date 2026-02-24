@@ -1,7 +1,7 @@
 import os
 import smtplib
 from email.mime.text import MIMEText
-from typing import List, Union
+from typing import List, Union, Dict
 
 # SMTP configuration only
 SMTP_HOST = os.environ.get('SMTP_HOST')
@@ -10,11 +10,14 @@ SMTP_USER = os.environ.get('SMTP_USER')
 SMTP_PASS = os.environ.get('SMTP_PASS')
 
 
-def send_email(subject: str, html_body: str, recipients: Union[str, List[str]], dry_run: bool = True,
-               sender_email: str = None, sender_name: str = None) -> bool:
-    """Send HTML email to multiple recipients via SMTP. No SQS/SES support.
+def send_email(subject: str, html_body: str, recipients: Union[str, List[str], List[Dict]], dry_run: bool = True,
+               sender_email: str = None, sender_name: str = None) -> int:
+    """Send HTML email to multiple recipients via SMTP.
 
-    If `dry_run` is True, the function only logs the intended action.
+    Recipients can be a list of strings (emails) or dictionaries ({'email': '...', 'unsubscribe_url': '...'}).
+    If a dictionary is provided, '{{ unsubscribe_url }}' in html_body will be replaced.
+
+    Returns the number of successfully sent emails.
     """
     print('send_email called; dry_run=', dry_run)
 
@@ -23,8 +26,10 @@ def send_email(subject: str, html_body: str, recipients: Union[str, List[str]], 
         recipients = [recipients]
 
     if dry_run:
-        print(f'DRY RUN: would send email to {len(recipients)} recipients: {", ".join(recipients)}')
-        return True
+        count = len(recipients)
+        sample = recipients[0] if count > 0 else "none"
+        print(f'DRY RUN: would send email to {count} recipients. Sample: {sample}')
+        return count
 
     # Require SMTP host and credentials
     if not SMTP_HOST:
@@ -46,24 +51,35 @@ def send_email(subject: str, html_body: str, recipients: Union[str, List[str]], 
             from_addr = f"{sender_name} <{from_addr}>"
 
         success_count = 0
+        envelope_from = SMTP_USER or sender_email or 'no-reply@example.com'
+
         for recipient in recipients:
-            msg = MIMEText(html_body, 'html')
-            msg['Subject'] = subject
-            msg['From'] = from_addr
-            msg['To'] = recipient
-            # Note: server.sendmail takes envelope from (must be valid/authorized)
-            # Some SMTP servers require envelope from to match authenticated user.
-            # We use SMTP_USER for envelope from if available to avoid bounce/spam issues,
-            # unless sender_email is provided and server allows it.
-            # For simplicity/compatibility, we use SMTP_USER as envelope sender if logged in,
-            # or the from_addr if not.
-            envelope_from = SMTP_USER or sender_email or 'no-reply@example.com'
-            server.sendmail(envelope_from, [recipient], msg.as_string())
-            print(f'SMTP email sent to {recipient}')
-            success_count += 1
+            email_addr = recipient
+            body = html_body
+
+            if isinstance(recipient, dict):
+                email_addr = recipient.get('email')
+                unsubscribe_url = recipient.get('unsubscribe_url')
+                if unsubscribe_url:
+                    body = body.replace('{{ unsubscribe_url }}', unsubscribe_url)
+
+            if not email_addr:
+                continue
+
+            try:
+                msg = MIMEText(body, 'html')
+                msg['Subject'] = subject
+                msg['From'] = from_addr
+                msg['To'] = email_addr
+
+                server.sendmail(envelope_from, [email_addr], msg.as_string())
+                print(f'SMTP email sent to {email_addr}')
+                success_count += 1
+            except Exception as e:
+                print(f'Failed to send to {email_addr}: {e}')
 
         server.quit()
-        return success_count == len(recipients)
+        return success_count
     except Exception as e:
-        print(f'SMTP failed: {e}')
-        return False
+        print(f'SMTP connection failed: {e}')
+        return 0
