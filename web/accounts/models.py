@@ -84,3 +84,29 @@ class UserProfile(models.Model):
     
     def __str__(self):
         return f"Profile for {self.user.email}"
+
+
+class SMTPConfig(models.Model):
+    """
+    Custom SMTP configuration for user-specific email sending.
+    """
+    user = models.OneToOneField(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name='smtp_config'
+    )
+    smtp_host = models.CharField(max_length=255)
+    smtp_port = models.IntegerField(default=587)
+    smtp_username = models.CharField(max_length=255, blank=True)
+    smtp_password = models.CharField(max_length=255, blank=True)
+    use_tls = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = _('SMTP Config')
+        verbose_name_plural = _('SMTP Configs')
+        
+    def __str__(self):
+        return f"SMTP Config for {self.user.email}"

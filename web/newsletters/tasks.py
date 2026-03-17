@@ -206,6 +206,18 @@ def process_newsletter(self, newsletter_id):
                 'unsubscribe_url': unsub_url
             })
 
+        # Retrieve user custom SMTP config if active
+        custom_smtp_kwargs = {}
+        if hasattr(newsletter.owner, 'smtp_config') and newsletter.owner.smtp_config.is_active:
+            smtp_conf = newsletter.owner.smtp_config
+            custom_smtp_kwargs = {
+                'custom_smtp_host': smtp_conf.smtp_host,
+                'custom_smtp_port': smtp_conf.smtp_port,
+                'custom_smtp_user': smtp_conf.smtp_username,
+                'custom_smtp_pass': smtp_conf.smtp_password,
+                'custom_use_tls': smtp_conf.use_tls,
+            }
+
         # 6. Send Email
         sent_count = sender.send_email(
             conf.EMAIL_SUBJECT,
@@ -213,7 +225,8 @@ def process_newsletter(self, newsletter_id):
             recipients_list,
             dry_run=dry_run,
             sender_email=config.sender_email,
-            sender_name=config.sender_name
+            sender_name=config.sender_name,
+            **custom_smtp_kwargs
         )
 
         # 7. Mark as Sent
