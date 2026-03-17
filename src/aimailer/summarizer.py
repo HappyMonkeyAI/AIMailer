@@ -3,8 +3,28 @@ import requests
 from typing import Dict
 
 API_KEY = os.environ.get('OPENAI_API_KEY')
-OLLAMA_URL = os.environ.get('OLLAMA_URL', 'https://ollama.wifispark.net')
+OLLAMA_URL = os.environ.get('OLLAMA_URL', 'http://localhost:11434')
 OLLAMA_MODEL = os.environ.get('OLLAMA_MODEL', 'qwen2.5:7b-instruct-q4_K_M')
+
+import re
+
+
+def clean_thought_blocks(text: str) -> str:
+    """
+    Remove common 'thinking' or 'reasoning' blocks from LLM output.
+    Supports <thought>, [[[thought]]], <reasoning>, etc.
+    """
+    if not text:
+        return ""
+    # Standard XML-like tags
+    text = re.sub(r'<thought>.*?</thought>', '', text, flags=re.DOTALL | re.IGNORECASE)
+    text = re.sub(r'<reasoning>.*?</reasoning>', '', text, flags=re.DOTALL | re.IGNORECASE)
+    # Double/Triple brackets common in some fine-tuned models
+    text = re.sub(r'\[\[\[?thought\]\]\].*?\[\[\[?/thought\]\]\]', '', text, flags=re.DOTALL | re.IGNORECASE)
+    # DeepSeek/Open-style <think> tags
+    text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL | re.IGNORECASE)
+    
+    return text.strip()
 
 
 def call_ollama(prompt: str, max_tokens: int = 512) -> str:
@@ -48,13 +68,14 @@ def summarize_text(text: str) -> Dict:
         "Finally, return 2-3 short tags separated by commas. Use JSON format with keys: summary, why, tags.\n\nARTICLE:\n" + text[:10000]
     )
     # Try Ollama local model first
-    ollama_out = call_ollama(prompt, max_tokens=600)
+    ollama_raw = call_ollama(prompt, max_tokens=600)
+    ollama_out = clean_thought_blocks(ollama_raw)
     if ollama_out:
         # Try to parse JSON from model
         try:
             import json
             # Heuristic: find the first '{' and last '}' to extract JSON block
-            import re
+            # Heuristic: find the first '{' and last '}' to extract JSON block
             match = re.search(r'\{.*\}', ollama_out, re.DOTALL)
             if match:
                 json_str = match.group(0)

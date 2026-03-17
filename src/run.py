@@ -23,7 +23,7 @@ def fetch_sources(fetchers, config, feed_cache_file=None):
         items.extend(rss_items)
     
     # Query local search endpoints if configured
-    perplexica = os.environ.get('PERPLEXICA_URL', 'http://192.168.1.2:3030/discover')
+    perplexica = os.environ.get('PERPLEXICA_URL', 'http://localhost:3030/discover')
     searx = os.environ.get('SEARXNG_URL', 'http://192.168.1.2:4040')
     keywords = getattr(config, 'KEYWORDS', [])
     q = ' '.join(keywords[:5]) if keywords else 'ai'
