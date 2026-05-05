@@ -8,6 +8,7 @@ python-dateutil
 boto3
 python-dotenv
 bleach
+cryptography
 
 # Django Integration (for tracker)
 Django>=4.2,<5.0

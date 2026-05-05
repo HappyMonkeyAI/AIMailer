@@ -1,6 +1,9 @@
 """
 Custom User model for AIMailer.
 """
+import base64
+from django.conf import settings
+from cryptography.fernet import Fernet
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -104,6 +107,28 @@ class SMTPConfig(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
+    def _get_fernet(self):
+        # Use SECRET_KEY to derive a 32-byte key for Fernet
+        key = base64.urlsafe_b64encode(settings.SECRET_KEY[:32].encode().ljust(32))
+        return Fernet(key)
+
+    def save(self, *args, **kwargs):
+        if self.smtp_password and not self.smtp_password.startswith('fnc:'):
+            f = self._get_fernet()
+            self.smtp_password = 'fnc:' + f.encrypt(self.smtp_password.encode()).decode()
+        super().save(*args, **kwargs)
+
+    def get_decrypted_password(self):
+        if not self.smtp_password:
+            return ''
+        if not self.smtp_password.startswith('fnc:'):
+            return self.smtp_password
+        try:
+            f = self._get_fernet()
+            return f.decrypt(self.smtp_password[4:].encode()).decode()
+        except Exception:
+            return ''
+
     class Meta:
         verbose_name = _('SMTP Config')
         verbose_name_plural = _('SMTP Configs')

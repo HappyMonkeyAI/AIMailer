@@ -6,6 +6,7 @@ from pathlib import Path
 from celery import shared_task
 from django.utils import timezone
 from django.conf import settings
+from django.db import models
 
 # Add src to sys.path to import aimailer modules
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -214,7 +215,7 @@ def process_newsletter(self, newsletter_id):
                 'custom_smtp_host': smtp_conf.smtp_host,
                 'custom_smtp_port': smtp_conf.smtp_port,
                 'custom_smtp_user': smtp_conf.smtp_username,
-                'custom_smtp_pass': smtp_conf.smtp_password,
+                'custom_smtp_pass': smtp_conf.get_decrypted_password(),
                 'custom_use_tls': smtp_conf.use_tls,
             }
 
@@ -245,6 +246,12 @@ def process_newsletter(self, newsletter_id):
             articles_sent=[item.get('url') for item in top_items],
             celery_task_id=self.request.id or ''
         )
+
+        # Update denormalized total_sends
+        if success_count > 0 and not dry_run:
+            Newsletter.objects.filter(id=newsletter.id).update(
+                total_sends=models.F('total_sends') + 1
+            )
 
         logger.info(f"Newsletter {newsletter.title} processed. Sent: {success_count}/{len(recipients_list)}")
 

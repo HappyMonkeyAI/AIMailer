@@ -5,7 +5,7 @@ import json
 import logging
 from django.core.exceptions import ObjectDoesNotExist
 
-from .models import NewsletterConfig, Newsletter
+from .models import NewsletterConfig, Newsletter, Subscriber
 
 logger = logging.getLogger(__name__)
 
@@ -100,6 +100,22 @@ def newsletter_saved(sender, instance, created, **kwargs):
 def newsletter_deleted(sender, instance, **kwargs):
     task_name = f'process-newsletter-{instance.id}'
     PeriodicTask.objects.filter(name=task_name).delete()
+
+@receiver(post_save, sender=Subscriber)
+def subscriber_saved(sender, instance, created, **kwargs):
+    """Update subscriber count when a subscriber is added or updated."""
+    newsletter = instance.newsletter
+    count = newsletter.subscribers.filter(status='active').count()
+    if newsletter.subscriber_count != count:
+        Newsletter.objects.filter(id=newsletter.id).update(subscriber_count=count)
+
+@receiver(post_delete, sender=Subscriber)
+def subscriber_deleted(sender, instance, **kwargs):
+    """Update subscriber count when a subscriber is removed."""
+    newsletter = instance.newsletter
+    count = newsletter.subscribers.filter(status='active').count()
+    if newsletter.subscriber_count != count:
+        Newsletter.objects.filter(id=newsletter.id).update(subscriber_count=count)
 
 @receiver(post_save, sender=CrontabSchedule)
 def crontab_saved(sender, instance, **kwargs):

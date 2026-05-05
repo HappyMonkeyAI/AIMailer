@@ -70,7 +70,9 @@ def send_email(subject: str, html_body: str, recipients: Union[str, List[str], L
         # Determine From address
         from_addr = sender_email or user or 'no-reply@example.com'
         if sender_name:
-            from_addr = f"{sender_name} <{from_addr}>"
+            # Sanitize sender_name to prevent header injection
+            clean_name = sender_name.replace('\n', '').replace('\r', '').strip()
+            from_addr = f"{clean_name} <{from_addr}>"
 
         success_count = 0
         envelope_from = user or sender_email or 'no-reply@example.com'
